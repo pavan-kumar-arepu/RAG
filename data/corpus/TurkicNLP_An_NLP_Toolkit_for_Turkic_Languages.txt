@@ -1,0 +1,4781 @@
+TurkicNLP: An NLP Toolkit for Turkic Languages
+Sherzod Hakimov
+Computational Linguistics
+University of Potsdam
+firstnamelastname@gmail.com
+Abstract
+Natural language processing for the Turkic lan-
+guage family, spoken by over 200 million people
+across Eurasia, remains fragmented, with most
+languages lacking unified tooling and resources.
+We present TurkicNLP, an open-source Python
+library providing a single, consistent NLP
+pipeline for Turkic languages across four script
+families: Latin, Cyrillic, Perso-Arabic, and Old
+Turkic Runic. The library covers tokenization,
+morphological analysis, part-of-speech tagging,
+dependency parsing, named entity recognition,
+bidirectional script transliteration, cross-lingual
+sentence embeddings, and machine translation
+through one language-agnostic API. A modu-
+lar multi-backend architecture integrates rule-
+based finite-state transducers and neural models
+transparently, with automatic script detection
+and routing between script variants. Outputs
+follow the CoNLL-U standard for full interop-
+erability and extension. Code and documenta-
+tion are hosted at https://github.com/
+turkic-nlp/turkicnlp.
+1
+Introduction
+1.1
+Background
+The Turkic languages form one of the world’s
+largest language families, comprising over 35 recog-
+nized languages spoken by approximately 200 mil-
+lion people across a vast geographic region stretch-
+ing from Turkey and the Balkans to Siberia and
+northwest China (Johanson, 2021).
+These lan-
+guages are characterized by shared typological fea-
+tures such as agglutinative morphology, vowel har-
+mony, and a subject-object-verb (SOV) word order
+(as illustrated in Table 1), which distinguish them
+significantly from many Indo-European languages
+(Jurafsky and Martin, 2026). Furthermore, the Tur-
+kic family exhibits remarkable script diversity, uti-
+lizing Latin, Cyrillic, and Perso-Arabic alphabets,
+with historical use of Old Turkic Runic scripts. This
+linguistic and scriptural richness presents unique
+challenges and opportunities for Natural Language
+Processing (NLP).
+1.2
+Motivation
+Despite the size and diversity of the Turkic language
+family, NLP tools and resources remain heavily
+skewed toward Turkish, with most other languages
+severely underresourced (Joshi et al., 2020). This
+fragmentation means that while some languages like
+Turkish have access to mature NLP toolkits such
+as Zemberek (Akın and Akın, 2007), and others
+like Kazakh benefit from specialized tools devel-
+oped by institutions like ISSAI, there is no single,
+unified library that covers the breadth of the Tur-
+kic family with a consistent API. Existing multilin-
+gual platforms like Apertium offer rule-based ma-
+chine translation and morphological analyzers for
+many Turkic languages (Forcada et al., 2011), but
+often lack a direct, user-friendly Python API for
+pipeline integration.
+The agglutinative nature of
+Turkic languages demands specialized morphologi-
+cal analysis approaches that go beyond the tokeniza-
+tion and part-of-speech tagging paradigms common
+in NLP for less morphologically complex languages.
+Moreover, ongoing script transitions in countries
+like Kazakhstan and Uzbekistan necessitate robust
+and unified transliteration tooling to bridge linguis-
+tic data across different orthographies.
+The ab-
+sence of a comprehensive, accessible, and unified
+NLP toolkit for Turkic languages impedes research,
+resource creation, and the development of practi-
+cal applications, particularly for the numerous low-
+resource languages within the family.
+1.3
+Contributions
+This work makes the following contributions:
+• Unified Pipeline API: A single Pipeline
+interface covering tokenization, morphologi-
+cal analysis, POS tagging, lemmatization, de-
+pendency parsing, named entity recognition,
+1
+arXiv:2602.19174v5  [cs.CL]  22 May 2026
+
+Language (ISO)
+Sentence
+Language (ISO)
+Sentence
+Latin script
+Turkish (tur)
+Ali kitabı gördü.
+Azerbaijani (aze)
+Ali kitabı gördü.
+Turkmen (tuk)
+Ali kitaby gördi.
+Gagauz (gag)
+Ali kitabı gördü.
+Crimean Tatar (crh)
+Ali kitanı kördi.
+Karakalpak (kaa)
+Ali kitaptı ko’rdi.
+Uzbek (uzb)
+Ali kitobni ko’rdi.
+Cyrillic script
+Kazakh (kaz)
+Aли кітапты көрді.
+Kyrgyz (kir)
+Али китепти көрдү.
+Tatar (tat)
+Али китапны күрде.
+Bashkir (bak)
+Али китапты күрҙе.
+Nogai (nog)
+Али китапты коьрди.
+Kumyk (kum)
+Али китапны гёрдю.
+Karachay-Balkar (krc)
+Али китапны кёрдю.
+Altai (alt)
+Али бичикти кӧрди.
+Sakha (sah)
+Али кинигэни көрдө.
+Tuvan (tyv)
+Али номну көрген.
+Chuvash (chv)
+Али кӗнекене курнӑ.
+Khakas (kjh)
+Али кітапты көрді.
+Perso-Arabic script (right-to-left)
+Uyghur (uig)كۆردى. كىتابنى ئەلى
+Table 1: The sentence “Ali saw the book” across 20 Turkic languages, illustrating the SOV word order (subject Ali
+— object book with accusative suffix — verb saw at the end) and the three active script families: Latin, Cyrillic, and
+Perso-Arabic.
+Figure 1: Geographic distribution of the Turkic language family (Source: Wikimedia Commons).
+transliteration, sentence embeddings, and ma-
+chine translation for 24 Turkic languages—
+with the same calling convention regardless of
+language or backend.
+• Script-Aware
+Architecture:
+Automatic
+script detection and routing across Latin, Cyril-
+lic, Perso-Arabic, and Old Turkic Runic, with
+bidirectional transliteration for 8 language–
+script pairs.
+• Multi-Backend Integration:
+Rule-based
+Apertium FST morphological analyzers for
+20 languages and Stanza neural models for
+10 languages—five with Universal Dependen-
+cies treebanks and five with custom-trained
+models—selectable
+without
+API
+changes.
+NLLB-200
+provides
+cross-lingual
+embed-
+dings and translation for all 24 languages.
+• CoNLL-U
+Interoperability:
+A
+Stanza-
+compatible hierarchical document model with
+native CoNLL-U import and export, ensuring
+compatibility with Universal Dependencies
+tools and treebanks.
+2
+
+• Open-Source
+Release:
+Apache-2.0
+li-
+censed,
+with
+documentation
+and
+code
+at
+https://github.com/turkic-
+nlp/turkicnlp and companion Jupyter
+notebooks
+for
+all
+supported
+languages
+at
+https://github.com/turkic-
+nlp/turkic-nlp-code-samples.
+2
+Related Work
+2.1
+General-Purpose NLP Toolkits
+General-purpose NLP toolkits have reached high
+maturity for major European languages but offer
+limited coverage of the Turkic family.
+Stanza
+(Qi et al., 2020) provides neural pipeline compo-
+nents trained on Universal Dependencies treebanks
+for 66+ languages, including five Turkic languages:
+Turkish, Kazakh, Kyrgyz, Uyghur, and Ottoman
+Turkish. However, it lacks a morphology-first de-
+sign, does not support script transliteration, and pro-
+vides no integration with Apertium FSTs for the re-
+maining Turkic languages. Trankit (Nguyen et al.,
+2021) is a transformer-based multilingual toolkit
+covering 56 languages via pipeline components built
+on XLM-R; it overlaps with Stanza on UD-treebank
+Turkic languages but similarly provides no script
+conversion or FST morphology. spaCy (Honnibal
+et al., 2020) is an industrial-strength library opti-
+mized for efficiency across major European lan-
+guages but offers no dedicated Turkic NLP support
+beyond standard Unicode handling. NLTK (Bird
+et al., 2009) is a widely-used educational framework
+with minimal Turkic-specific components. Polyglot
+(Al-Rfou’ et al., 2013) provides distributed word
+representations and basic NLP components for
+100+ languages, including several Turkic varieties,
+but does not support morphological analysis, script
+conversion, or unified pipeline integration. UDPipe
+(Straka et al., 2016) offers trainable pipelines for
+any CoNLL-U treebank but does not bundle Tur-
+kic models and lacks transliteration support. Uralic-
+NLP (Hämäläinen, 2019), built on the Giellatekno/-
+Divvun FST infrastructure, provides a comparable
+morphology-first, script-aware toolkit for Uralic mi-
+nority languages; its architecture—FST analyzers
+accessed through a unified Python API—directly
+parallels TurkicNLP’s design, though it targets an
+entirely different language family with different
+morphological and script profiles. calamanCy (Mi-
+randa, 2023) and PyThaiNLP (Phatthiyaphaibun
+et al., 2023) exemplify a complementary paradigm:
+language-specific pipelines that consolidate disjoint
+NLP tools for morphologically complex under-
+resourced languages behind a unified API. Turkic-
+NLP occupies a similar role—consolidating frag-
+mented tools for under-resourced languages—but
+extends the paradigm to a 24-language family with
+integrated multi-backend swappability and script-
+aware transliteration routing as first-class architec-
+tural features.
+2.2
+Turkic-Specific NLP Tools and Pipelines
+Several tools address individual Turkic languages,
+organized here by language.
+Turkish:
+Oflazer and Saraçlar (Oflazer and
+Saraçlar, 2018) provide the definitive reference vol-
+ume on Turkish NLP, surveying 25 years of work
+on morphological processing, language modeling,
+deep parsing, machine translation, treebanks, and
+lexical resources. Zemberek-NLP (Akın and Akın,
+2007) is a comprehensive Java library for Turk-
+ish NLP covering morphological analysis, POS tag-
+ging, and spell checking; it is restricted to Turkish,
+does not expose a pip-installable Python API, and
+has no cross-family support. TurkishDelightNLP
+(Alecakir et al., 2022) is a neural Turkish NLP
+pipeline offering tokenization, morphological anal-
+ysis, dependency parsing, and NER with strong per-
+formance on Turkish; it targets Turkish exclusively
+and does not integrate with other Turkic languages
+or script conversion. VNLP (Turker et al., 2023)
+is an open-source Python NLP library for Turk-
+ish providing morphological analysis, named en-
+tity recognition, dependency parsing, and sentiment
+analysis, including quantitative benchmarks on stan-
+dard Turkish test sets; like TurkishDelightNLP it is
+Turkish-only and provides no script handling. Istan-
+bul Technical University (ITU)1 maintains a com-
+plementary Turkish NLP infrastructure including
+neural pipelines, the IMST and ITU Web treebanks,
+TRopBank PropBank, and supporting corpora (Ery-
+iğit et al., 2023). The Turkish NLP Suite (Altinok,
+2023) is an open-source non-profit collection that in-
+cludes spaCy-compatible Turkish models, the Sen-
+tiTurca sentiment corpus, TrGLUE benchmark, In-
+structTurca instruction-tuning data, and BellaTurca.
+Kazakh: The Institute of Smart Systems and
+Artificial Intelligence (ISSAI) at Nazarbayev Uni-
+versity2 has developed one of the most compre-
+hensive Turkic-language NLP ecosystems. Text re-
+sources include KazNERD (Yeshpanov et al., 2022)
+1https://bbf.itu.edu.tr/en/research/
+research-labs/nlp-lab
+2https://issai.nu.edu.kz/
+3
+
+(112,702 tokens, 25 entity classes), KazQAD (Yesh-
+panov et al., 2024a), and KazParC (Yeshpanov et al.,
+2024c) (371,902 parallel sentences across Kazakh,
+English, Russian, and Turkish). The speech strand
+covers KazakhTTS2 (Mussakhojayeva et al., 2022)
+(271 hours TTS), a multilingual Turkic speech cor-
+pus spanning 10 languages (Mussakhojayeva et al.,
+2023a), and the Söyle noise-robust ASR system
+for 11 Turkic languages (Mussakhojayeva et al.,
+2023b).
+Kyrgyz: Alekseev and Turatali (2025) survey
+the state of Kyrgyz NLP, cataloguing available
+resources and proposing a development roadmap;
+they note that despite millions of speakers, Kyr-
+gyz remains severely under-resourced. KyrgyzNER
+(Turatali et al., 2025a) provides 10,900 annotated
+sentences across 27 entity classes for Kyrgyz NER.
+Turatali et al. (2025b) present a benchmark for eval-
+uating Kyrgyz LLMs covering commonsense rea-
+soning and multilingual understanding tasks. The
+Cramer Project (The Cramer Project, 2024) pro-
+vides dedicated Kyrgyz speech models: AkylAI-
+STT-small (Whisper fine-tuned for Kyrgyz ASR)
+and AkylAI-TTS-mini (Matcha-TTS trained on 13
+hours of Kyrgyz speech).
+Multiple languages: Apertium (Forcada et al.,
+2011) provides rule-based morphological analyzers
+and machine translation for 20+ Turkic languages
+via finite-state transducers, representing the most
+comprehensive freely available resource for Tur-
+kic morphological analysis. Its native interface is
+command-line-based, loading Apertium FST bina-
+ries via the hfst Python package without requiring
+system-level installation. Washington et al. (2020b)
+complement this with multi-script morphological
+transducers and transcribers for seven Turkic lan-
+guages, directly addressing the script diversity that
+complicates cross-lingual NLP in the family. Ab-
+durakhmonova et al.
+2022 present an NLP tool
+for linguistic analysis of Turkic languages focusing
+on morphological annotation, though it addresses
+a limited language set without a Python package
+interface.
+Universal Dependencies treebanks for
+Turkic languages were created by dedicated com-
+munity efforts: the Turkish IMST treebank (Su-
+lubacak et al., 2016), the Tatar NMCTT treebank
+(Taguchi et al., 2022), the Uyghur UDT (Eli et al.,
+2016), the Yakut/Sakha treebank (Merzhevich and
+Ferraz Gerardi, 2022), and Old Turkish (Derin and
+Harada, 2021), with a parallel aligned treebank for
+Azerbaijani, Kyrgyz, Turkish, and Uzbek (Akhund-
+janova et al., 2025). These contributions remain
+language-specific and are not integrated into a uni-
+fied pipeline toolkit. Mirzakhalov et al. (2021a) pro-
+vide the first large-scale MT study across 22 Turkic
+languages, contributing a parallel corpus of approxi-
+mately 1.4 million sentences, bilingual baselines for
+26 language pairs, multi-domain test sets, and hu-
+man evaluation scores. Mirzakhalov et al. (2021b)
+follow up with a multiway multilingual NMT evalu-
+ation across the same Turkic language set, analysing
+transfer between language pairs and identifying bot-
+tlenecks for lower-resource varieties. Tukeyev et al.
+(2026) extend this line of work by developing and
+cleaning parallel corpora for six Turkic languages
+(Kazakh, Azerbaijani, Kyrgyz, Turkish, Turkmen,
+and Uzbek) totalling over 3.8 million sentences,
+and fine-tuning NLLB-200 to achieve substantial
+gains in BLEU and chrF over the baseline for low-
+resource pairs.
+2.3
+Multilingual Models and Benchmarks
+Large-scale multilingual models and language-
+specific pretrained models now cover a growing
+number of Turkic languages, organized here by lan-
+guage.
+Turkish: BERTurk (Schweter, 2020) provides
+multiple Turkish BERT variants (cased, uncased,
+128k vocabulary).
+TURNA (Uludoğan et al.,
+2024) provides a 1.1B-parameter Turkish encoder-
+decoder language model. Large generative LLMs
+include Kumru-2B (Turker et al., 2024) and
+Trendyol-LLM (Trendyol Tech, 2024).
+Kazakh: KAZ-LLM (Yeshpanov et al., 2024b)
+(8B and 70B parameters, LLaMA 3.1-based) and
+Sherkala-Chat (Koto et al., 2025) are generative
+models targeting Kazakh.
+Azerbaijani: aLLMA (Isbarov et al., 2024) is a
+language model for Azerbaijani.
+Uzbek:
+UzBERT (Mansurov and Mansurov,
+2021), TahrirchiBERT (Mamasaidov et al., 2021),
+and BERTbek (Kuriyozov et al., 2024) cover
+Uzbek.
+Kyrgyz: KyrgyzBERT (Metinov, 2023) is avail-
+able for Kyrgyz.
+Multilingual:
+Cross-lingual word embedding
+mappings for Turkic languages were studied by
+Kuriyozov et al. (2020), who show that shared
+morphological structure enables effective alignment
+across Kazakh, Uzbek, Azerbaijani, and Turkish.
+Large-scale multilingual models such as mBERT
+(Devlin et al., 2019) and XLM-R (Conneau et al.,
+2020) provide broad cross-lingual representations
+for Turkic NLP, but suffer from high tokenizer fer-
+4
+
+tility on agglutinative languages and do not consti-
+tute processing pipelines. The mGPT multilingual
+generative model (Shliazhko et al., 2024) covers
+nine Turkic languages (Azerbaijani, Bashkir, Chu-
+vash, Kazakh, Kyrgyz, Tatar, Turkmen, Uzbek, and
+Sakha). The NLLB-200 model (NLLB Team et al.,
+2022) covers 200 languages including 14 Turkic
+variants for machine translation.
+Evaluation benchmarks:
+Evaluation bench-
+marks for Turkic NLP have advanced considerably.
+TUMLU (Isbarov et al., 2025) covers 9 Turkic
+languages (Azerbaijani, Crimean Tatar, Turkish,
+Uyghur, Uzbek, Karakalpak, Kyrgyz, Kazakh, and
+Tatar) with 38K multiple-choice questions; Kardeş-
+NLU (Senel et al., 2024) benchmarks cross-lingual
+NLU transfer from Turkish into five related lan-
+guages (Azerbaijani, Kazakh, Kyrgyz, Uzbek, and
+Uyghur); TR-MMLU (Bayram et al., 2025) pro-
+vides 6,200 multiple-choice questions across 62 sub-
+ject categories specifically for benchmarking Turk-
+ish LLMs; TurkishMMLU (Yüksel et al., 2024) of-
+fers over 10,000 curriculum-based multiple-choice
+questions across 9 subjects spanning sciences, math-
+ematics, and culturally specific topics for Turkish;
+Cetvel (Er et al., 2026) is a unified 23-task evalu-
+ation suite assessing language understanding, gen-
+eration, and cultural competence of LLMs in Turk-
+ish; and TurkBench (Toraman et al., 2026) provides
+a broad multi-task benchmark for evaluating Turk-
+ish LLMs across diverse NLP tasks. Turatali et al.
+(2025b) build a dedicated benchmark for Kyrgyz
+LLMs targeting commonsense reasoning and mul-
+tilingual transfer.
+Veitsman and Hartmann 2025
+survey the state of NLP for Central Asian Turkic
+languages (Kazakh, Kyrgyz, Uzbek, Uyghur, Turk-
+men), documenting persistent resource gaps and
+the challenges of cross-lingual transfer from higher-
+resource Turkic languages.
+Collectively, these
+benchmarks underscore the need for unified pro-
+cessing infrastructure to support training and eval-
+uation pipelines.
+2.4
+Speech Technologies for Turkic
+Languages
+Speech processing resources for Turkic languages
+have expanded significantly through dedicated cor-
+pus construction and multilingual modeling efforts.
+ISSAI has led the development of both ASR and
+TTS systems spanning the Turkic family: Turki-
+cASR (Mussakhojayeva et al., 2023a) trains mul-
+tilingual ASR models across 10 Turkic languages
+(Azerbaijani, Bashkir, Chuvash, Kazakh, Kyrgyz,
+Sakha, Tatar, Turkish, Uyghur, Uzbek), achieving a
+56.7% relative CER reduction through cross-lingual
+transfer compared to monolingual baselines. Tur-
+kicTTS (Yeshpanov et al., 2023) extends this mul-
+tilingual paradigm to speech synthesis for a par-
+tially overlapping set of 10 languages (Azerbai-
+jani, Bashkir, Kazakh, Kyrgyz, Sakha, Tatar, Turk-
+ish, Turkmen, Uyghur, Uzbek)—notably including
+Turkmen but not Chuvash. Söyle (Mussakhojayeva
+et al., 2023b) provides noise-robust ASR for 11 Tur-
+kic languages by fine-tuning Whisper with data aug-
+mentation.
+Key speech corpora include KSC2 (1,200 hours
+of Kazakh; Mussakhojayeva et al. 2021a), TSC
+(218 hours of Turkish;
+ISSAI 2024),
+USC
+(105 hours of Uzbek;
+Mussakhojayeva et al.
+2021b), TatSC (269 hours of Tatar; ISSAI 2023),
+TatarTTS (an open-source TTS synthesis dataset
+for Tatar;
+Orel et al. 2024), TurkmenSpeech
+(251 hours of Turkmen; Mamedov 2024), and
+KazakhTTS2 (271 hours; Mussakhojayeva et al.
+2022). Mozilla Common Voice (Ardila et al., 2020)
+provides community-recorded speech data for sev-
+eral Turkic languages, with Bashkir (∼265 hours),
+Turkish (∼129 hours),
+Kyrgyz (∼44 hours),
+Tatar (∼29 hours), Chuvash (∼12 hours), Sakha
+(∼6 hours), and Kazakh (∼1 hour). FLEURS (Con-
+neau et al., 2022) covers Azerbaijani, Kazakh, Kyr-
+gyz, Turkish, and Uzbek for few-shot speech evalu-
+ation. Dedicated Kyrgyz speech models have also
+emerged: the Cramer Project (The Cramer Project,
+2024) releases AkylAI-STT-small (Whisper fine-
+tuned for Kyrgyz) and AkylAI-TTS-mini (Matcha-
+TTS trained on 13 hours of Kyrgyz speech), pro-
+viding the first openly available language-specific
+ASR and TTS systems for Kyrgyz.
+Beyond sys-
+tem building, several studies survey and extend
+ASR across the Uyghur–Kazakh–Kyrgyz cluster:
+Du et al. (2023) review ASR techniques for Uyghur,
+Kazakh, and Kyrgyz, identifying shared phonolog-
+ical challenges and techniques effective across all
+three languages; Orel et al. (2023) demonstrate
+cross-lingual transfer from Kazakh to other Tur-
+kic varieties using a shared-encoder approach; and
+Bekarystankyzy et al. (2024) propose a multilin-
+gual end-to-end ASR system exploiting the com-
+mon Cyrillic alphabet across low-resource Turkic
+languages.
+5
+
+alt
+aze
+bak
+chv
+crh
+gag
+kaa
+kaz
+kir
+kjh
+krc
+kum
+nog
+sah
+tat
+tuk
+tur
+tyv
+uig
+uzb
+0
+1
+2
+3
+4
+5
+6
+7
+fertility
+Fertility by Language
+English (avg)
+qwen
+llama
+olmo
+openai
+(a) Mean fertility (tokens per word).
+alt
+aze
+bak
+chv
+crh
+gag
+kaa
+kaz
+kir
+kjh
+krc
+kum
+nog
+sah
+tat
+tuk
+tur
+tyv
+uig
+uzb
+0
+2
+4
+6
+8
+10
+p95 tokens per word
+P95 Tokens Per Word by Language
+English (avg)
+qwen
+llama
+olmo
+openai
+(b) 95th-percentile tokens per word.
+Figure 2: Tokenizer efficiency across 20 Turkic languages and English for four LLM tokenizers: Qwen3.5, LLaMA 3,
+OLMo 3, and GPT-5.2. Higher fertility indicates less efficient tokenization, reflecting poorer vocabulary coverage for
+agglutinative languages.
+2.5
+Tokenizer Efficiency Across Turkic
+Languages
+The choice of tokenizer has a profound impact
+on inference cost and downstream performance for
+Turkic languages. We evaluate four widely used
+LLM tokenizers—Qwen3.5-35B, Meta-LLaMA-3-
+8B, OLMo-3-1025-7B, and GPT-5.2—across 20
+Turkic languages using a parallel set of 20 typologi-
+cally diverse sentences translated into each language
+(Figure 2).
+English exhibits near-optimal fertility of 1.08–
+2.09 tokens per word across all tokenizers. Turk-
+ish, the best-represented Turkic language, reaches
+1.95 (Qwen/GPT-5.2) to 3.03 (LLaMA). For under-
+represented languages, the “tokenizer tax” is se-
+vere: Uyghur fertility ranges from 3.38 (GPT-5.2)
+to 6.85 (OLMo), Sakha from 3.48 (GPT-5.2) to
+5.21 (LLaMA), and Bashkir from 2.54 (GPT-5.2)
+to 5.68 (LLaMA). The 95th-percentile tokens per
+word—a proxy for worst-case segmentation of com-
+plex agglutinated forms—reaches 11.0 for Uyghur
+and Tatar under LLaMA, compared to 2.0 for En-
+glish across all tokenizers.
+GPT-5.2 and Qwen3.5 consistently achieve the
+best Turkic coverage, while LLaMA 3 exhibits the
+highest fertility across all Turkic languages. These
+findings underscore the need for tokenizer-aware
+evaluation when deploying multilingual LLMs on
+Turkic text and motivate continued development of
+dedicated Turkic tokenization strategies.
+6
+
+2.6
+Resource Collections and Community
+Initiatives
+Several community-driven collections catalogue the
+growing body of Turkic NLP resources. The Turk-
+ish NLP resource list (Turkish NLP Community,
+2023)3 is a community-maintained index of Turk-
+ish NLP tools, corpora, treebanks, and pre-trained
+models.
+The Turkic Interlingua (TIL) project
+(Syzdykov and et al., 2021) 4 provides parallel
+corpora across 22 Turkic languages together with
+baseline systems for machine translation, automatic
+speech recognition, and text-to-speech, enabling
+systematic multilingual research across the family.
+The UD-Turkic research group5 works on harmon-
+ising Universal Dependencies treebanks across Tur-
+kic languages, producing the first fully aligned par-
+allel UD treebanks for Azerbaijani, Kyrgyz, Turk-
+ish, and Uzbek (Akhundjanova et al., 2025). Or-
+ganisational and workshop infrastructure comple-
+ments these datasets: SIGTURK, the ACL Special
+Interest Group on Turkic NLP (SIGTURK Organiz-
+ing Committee, 2026)6, organises dedicated work-
+shop venues that bring together researchers work-
+ing on Turkic languages and provide an important
+venue for disseminating resources and evaluation re-
+sults. The TurkLang conference series7, held annu-
+ally since 2013, serves as another key venue ded-
+icated to computational processing of Turkic lan-
+guages, fostering cross-institutional collaboration
+across the Turkic-speaking world.
+Sulevmanov
+et al. (2020) introduce the Turkic Morpheme Web
+Portal, a collaborative platform aggregating mor-
+phological databases and linguistic tools across Tur-
+kic languages to support Turkology research. Build-
+ing on this, Gatiatullin et al. (2024) present the Turk-
+lang linguistic knowledge graph, a unified seman-
+tic model integrating lexical, morphological, and
+syntactic resources for multiple Turkic languages
+into a queryable graph structure. Cekinel and Çöl-
+tekin (2025) provide a recent systematic survey
+of Turkic language modeling, reviewing available
+corpora, models, and benchmarks while highlight-
+ing persistent challenges around data scarcity, tok-
+enization, and multilingual transfer across the fam-
+ily. Sharipov et al. (2025) offer a complementary
+systematic review focused on Uzbek and Turkmen,
+3https://github.com/maidis/nlp-tr
+4https://github.com/turkic-
+interlingua/til-mt
+5https://github.com/ud-turkic
+6https://sigturk.github.io
+7https://turklang.ieees.org/
+cataloguing available NLP resources, methods, and
+benchmarks and documenting the particular chal-
+lenges posed by agglutinative morphology and his-
+torical script transitions.
+2.7
+Turkic NLP Resource Landscape
+Table 7 (Appendix) catalogues datasets, NLP com-
+ponents, and toolkit coverage for all 24 languages,
+grouped by genetic branch.
+Table 8 (Appendix)
+surveys all publicly available pretrained neural
+language models—encoder-only, generative, and
+multilingual—for each supported language.
+To-
+gether, these tables motivate the design choices de-
+scribed in the subsequent sections.
+3
+Library Design and Architecture
+3.1
+Design Goals
+TurkicNLP was designed around six core princi-
+ples. First, a unified API: a single Pipeline
+entry point operates identically across all 24 sup-
+ported languages, abstracting backend differences
+and enabling users to switch languages without code
+changes.
+Second, multi-backend: each proces-
+sor can be fulfilled by interchangeable backends—
+rule-based, Apertium FST, or Stanza neural—
+without modifying user-facing code; backend se-
+lection is controlled either via catalog.json
+defaults or explicit constructor parameters. Third,
+script-awareness: the library detects input scripts
+automatically via Unicode block analysis and
+routes text to the appropriate processors, insert-
+ing transliteration steps when a model trained
+on one script variant is applied to input in an-
+other.
+Fourth, a lightweight core:
+manda-
+tory dependencies are minimal (Python 3.9+ and
+NumPy only);
+heavy dependencies (PyTorch,
+Stanza,
+Hugging Face transformers,
+hfst) are
+optional extras installable via pip install
+turkicnlp[stanza], [nllb], or [all].
+Fifth, license isolation: the library core is Apache-
+2.0 licensed; and other components are downloaded
+separately at runtime and never bundled with the
+pip distribution. Sixth, CoNLL-U interoperabil-
+ity: native CoNLL-U import and export ensures
+full compatibility with the Universal Dependencies
+ecosystem (de Marneffe et al., 2021) and standard
+downstream tools.
+3.2
+Pipeline Architecture
+The
+Pipeline
+class
+is
+the
+central
+entry
+point.
+It accepts a language code, a list of
+7
+
+processor names,
+an optional script override,
+and per-processor configuration overrides (e.g.,
+morph_backend=”apertium”).
+On initial-
+ization the pipeline: (1) determines the working
+script—auto-detected or user-declared;
+(2) re-
+solves processor dependencies:
+each processor
+class declares REQUIRES annotation layers, so
+requesting
+”depparse”
+automatically
+adds
+”tokenize” and ”pos” if omitted; (3) consults
+catalog.json to identify the default backend
+and model download URL for each processor–
+language–script combination; and (4) instantiates
+and loads processors in the following canonical
+order:
+tokenize →mwt →morph →pos →lemma
+→depparse →ner →embeddings →
+sentiment →translate
+When called on a text string, the pipeline:
+creates a Document; auto-detects the script if
+not declared;
+optionally transliterates the text
+to the script variant required by the available
+model; passes the document through each proces-
+sor sequentially; and optionally back-transliterates
+output annotations (e.g., lemmas) to the origi-
+nal script.
+Batch processing is supported via
+pipeline.batch(texts), and file process-
+ing via pipeline.process_file(input,
+output, format), accepting conllu and
+json output formats. Figure 3 shows the compo-
+nent structure of the library.
+Script
+ScriptDetector
+Transliterator
+Pipeline
+lang · processors[]
+script · config
+Model
+Mgmt
+ModelRegistry
+Downloader
+catalog.json
+Processor Chain
+tokenize →mwt →morph →pos →lemma
+→depparse →ner →embeddings →translate
+orchestrates
+Document Model
+Document →Sentence
+,→Token / Word / Span
+produces
+Figure 3: High-level component architecture of Tur-
+kicNLP. The Pipeline orchestrates a sequential
+Processor chain; the Script subsystem handles auto-
+matic script detection and transliteration; Model Man-
+agement resolves and downloads model artifacts via
+catalog.json; the Document Model provides a hi-
+erarchical output representation.
+3.3
+Document Data Model
+TurkicNLP uses a Stanza-compatible hierarchi-
+cal data model: Document →Sentence →
+Token →Word →Span.
+Each Word car-
+ries:
+text, lemma, upos (Universal POS
+tag), xpos (language-specific tag), feats (UD
+morphological features),
+head and deprel
+(dependency arc),
+deps (enhanced dependen-
+cies), start_char/end_char, and ner la-
+bel.
+Named entity spans are represented as
+Span objects with label, start_char, and
+end_char. The Document additionally records
+script (detected or declared), embedding
+(document-level vector from the NLLB backend),
+translation (output from the translation back-
+end), and _processor_log tracing which back-
+ends processed the document.
+Listing
+1
+illustrates
+standard
+pipeline
+us-
+age.
+CoNLL-U
+output
+is
+produced
+via
+doc.to_conllu().
+Listing 1: Pipeline usage and annotation access (Turk-
+ish).
+import turkicnlp
+turkicnlp.download(”tur”)
+nlp = turkicnlp.Pipeline(
+”tur”,
+processors=[”tokenize”,”pos”,”
+,→lemma”,”ner”,”depparse”])
+doc = nlp(”Halil dün Ankara’ya gitti”)
+for w in doc.words:
+print(w.text, w.upos, w.lemma, w.
+,→ner)
+# Halil
+PROPN
+halil
+B-PER
+# dün
+NOUN
+dün
+O
+# Ankara’ya PROPN
+ankara B-LOC
+# gitti
+VERB
+git
+O
+print(doc.to_conllu())
+3.4
+Processor Interface
+Each processor is a subclass of an abstract
+Processor base class that declares what annota-
+tion layers it consumes and produces. This declar-
+ative dependency model allows the pipeline to re-
+solve processor ordering automatically and to raise
+an error early if a required layer is missing. The
+interface is intentionally minimal: processors im-
+plement a load method and a process method, and
+are otherwise self-contained. This design makes it
+straightforward for third-party contributors to add
+new languages, new backends, or new processing ap-
+8
+
+proaches without modifying the pipeline core.
+3.5
+Model Registry and Download Manager
+Model metadata is maintained in a central JSON
+manifest (catalog.json) that records, for each
+language–script–processor combination, a down-
+load URL, an integrity checksum, a license iden-
+tifier, and a quality tier. On first use the library
+fetches and verifies only the model files needed
+for the requested processors; subsequent calls use
+the local cache. Selective download, programmatic
+discoverability of available languages and proces-
+sors, and license-aware storage (keeping compo-
+nents with different license terms in separate cache
+paths) are supported. The manifest-driven approach
+decouples model management from library code, al-
+lowing new models to be registered without releas-
+ing a new library version.
+4
+Script and Orthography Support
+4.1
+Script Coverage
+TurkicNLP supports four script families:
+Latin
+(Latn), Cyrillic (Cyrl), Perso-Arabic (Arab), and
+Old Turkic Runic (Orkh). Several languages use
+multiple scripts, and a number of countries are un-
+dergoing active official script transitions. Full script
+assignments per language are given in Table 3. Uni-
+code NFC normalization is applied by default; the
+Turkish dotted/dotless I distinction (İ/I, i/ı) is han-
+dled correctly throughout. Available pretrained neu-
+ral language models per language are surveyed in
+Table 8 (Appendix).
+4.2
+Automatic Script Detection
+The script detector identifies the dominant script
+of a text string through Unicode block analysis.
+Each alphabetic character is classified into one of
+the four supported script ranges; non-alphabetic
+characters (digits, punctuation, whitespace) are ex-
+cluded.
+A segment-detection function addition-
+ally splits mixed-script documents into contiguous
+single-script runs. Cyrillic/Latin homoglyphs (e.g.,
+Cyrillic a, e, o) are classified by Unicode codepoint
+rather than visual appearance. Language-aware val-
+idation optionally flags a mismatch between the de-
+tected script and a declared language code.
+4.3
+Transliteration
+TurkicNLP implements bidirectional transliteration
+for languages (Table 2). Mapping tables follow of-
+ficial national standards where available: the 2021
+Kazakh official Latin alphabet, the 1995 Uzbek
+standard, the Uyghur Latin Yéziqi (ULY). For
+Ottoman Turkish a simplified academic Latin-to-
+Arabic mapping is provided; for Old Turkic, one-
+way Runic →Latin covers the Orkhon and Yenisei
+codepoints per standard Turkological conventions.
+The Uyghur transliteration support is provided by
+Tursun (2026) with multiple scripts. Another im-
+portant step in here is the support for Common
+Turkic Alphabet. The Common Turkic alphabet
+is a unified 34-letter Latin-based writing system de-
+signed to facilitate linguistic communication and
+cultural integration among Turkic-speaking nations
+(International Turkic Academy, 2024). Originally
+proposed following the 1991 Istanbul symposium,
+the script reached a historic milestone in 2024 when
+the Organization of Turkic States finalized its con-
+temporary standard to serve as a bridge for regional
+heritage (Organization of Turkic States, 2024; ist,
+1991).
+Language
+ISO
+Direction
+Standard
+Kazakh
+kaz
+Cyrl ↔Latn
+Official 2021
+Uzbek
+uzb
+Cyrl ↔Latn
+Official 1995
+Azerbaijani
+aze
+Cyrl ↔Latn
+Official 1991
+Tatar
+tat
+Cyrl ↔Latn
+Zamanälif
+Turkmen
+tuk
+Cyrl ↔Latn
+Official 1993
+Karakalpak
+kaa
+Cyrl ↔Latn
+Official 2016
+Crimean Tatar
+crh
+Cyrl ↔Latn
+Latin std.
+Uyghur
+uig
+Arab ↔Latn
+ULY
+Ottoman Turkish
+ota
+Latn →Arab
+Academic
+Old Turkic
+otk
+Orkh →Latn
+Turkological
+All Languages
+-
+- →Latn
+Official 2024
+Table 2: Transliteration pairs supported by TurkicNLP.
+The engine uses a greedy longest-match algorithm:
+at each position it tries matches of decreasing length
+(up to four characters), resolving digraphs and tri-
+graphs before single characters. Capitalization is
+preserved. Script-aware pipeline routing integrates
+transliteration automatically: when a neural model
+is trained on one script variant, the pipeline in-
+serts a forward transliteration step before processing
+and back-transliteration after, making script conver-
+sion transparent to the user. Known limitations in-
+clude: vowel-harmony-conditioned homographs in
+Kazakh and Kyrgyz (where a Cyrillic sequence may
+correspond to two distinct Latin strings depending
+on context); zero-width non-joiner (U+200C) han-
+dling in Uyghur Perso-Arabic, where incorrect nor-
+malization can break word boundaries; and Perso-
+Arabic diacritics (harakat) in Ottoman Turkish,
+which are stripped by the current implementation
+rather than mapped to Latin equivalents.
+These
+9
+
+edge cases are documented in the repository and tar-
+geted for correction in future releases.
+Listing 2: Script detection and Kazakh Cyrillic/Latin
+transliteration.
+from turkicnlp.scripts import Script
+from turkicnlp.scripts.detector import
+,→
+detect_script
+from turkicnlp.scripts.transliterator
+,→import Transliterator
+# Detect script
+cyrl = ”Мен Алматыда турамын.”
+#
+,→Kazakh Cyrillic
+print(detect_script(cyrl))
+# Script
+,→.CYRILLIC
+# Cyrillic -> Latin (2021 official
+,→Kazakh alphabet)
+t = Transliterator(
+”kaz”, source=Script.CYRILLIC,
+,→target=Script.LATIN)
+latin = t.transliterate(cyrl)
+print(latin)
+# Men Almatyda turamyn.
+# Reverse: Latin -> Cyrillic
+t_back = Transliterator(
+”kaz”, source=Script.LATIN, target
+,→=Script.CYRILLIC)
+print(t_back.transliterate(latin))
+Listing 3: Tranliteration for Common Turkic Alphabet.
+from turkicnlp.scripts import Script
+from turkicnlp.scripts.transliterator
+,→import Transliterator
+# Turkish Latin →CTS
+t = Transliterator(”tur”, Script.LATIN
+,→, Script.COMMON_TURKIC)
+print(t.transliterate(”Türkçe güzel
+,→bir dil”))
+# →Türkçe güzel bir dil
+# Kazakh Cyrl →CTS
+t = Transliterator(”kaz”, Script.
+,→CYRILLIC, Script.COMMON_TURKIC)
+print(t.transliterate(”Қазақстан”))
+# →Qazaqstan
+# Azerbaijani Latin →CTS
+t = Transliterator(”aze”, Script.LATIN
+,→, Script.COMMON_TURKIC)
+print(t.transliterate(”əAzrbaycan dili
+,→”))
+# →Azärbaycan dili
+# Turkmen Latin →CTS
+t = Transliterator(”tuk”, Script.LATIN
+,→, Script.COMMON_TURKIC)
+print(t.transliterate(”Türkmen dili”))
+# →Türkmen dili
+4.4
+Language and Processor Coverage
+Table 3 summarises the script and processor avail-
+ability for all 24 supported languages. Coverage re-
+flects the state of publicly available resources: Turk-
+ish and Kazakh receive the full pipeline including
+NER; ten languages have Stanza neural parsing via
+UD treebanks (five official, five custom-trained); 20
+languages have Apertium FST morphological analy-
+sis; a multilingual Glot500-based neural morpholog-
+ical analyzer and lemmatizer covers 20 languages;
+and all 24 languages receive NLLB-200 sentence
+embeddings and machine translation.
+Language
+Script
+Tokenize
+MWT
+Morph (FST)
+Morph (Neu)
+POS Tag
+Lemmatize
+Dep. Parse
+NER
+Transliterate
+Embed.
+Translate
+Oghuz
+Turkish
+Latn
+✓✓✓✓✓✓✓✓– ✓✓
+Azerbaijani
+Latn/Cyrl ✓✓✓✓✓✓✓× ✓✓✓
+South Azerb.
+Arab
+× × × × × × × × – ✓✓
+Turkmen
+Latn/Cyrl ✓✓∼✓✓✓✓× ✓✓✓
+Gagauz
+Latn
+✓✓∼∼∼∼× × – × ×
+Kipchak
+Kazakh
+Cyrl/Latn ✓✓✓✓✓✓✓✓✓✓✓
+Kyrgyz
+Cyrl
+✓✓✓✓✓✓✓× × ✓✓
+Tatar
+Cyrl/Latn ✓✓✓✓✓✓✓× ✓✓✓
+Bashkir
+Cyrl
+✓✓∼✓✓✓✓× × ✓✓
+Crimean Tatar
+Latn/Cyrl ✓✓∼∼∼∼× × ✓✓✓
+Karakalpak
+Latn/Cyrl ✓✓∼∼∼∼∼× ✓× ×
+Nogai
+Cyrl
+✓✓∼× × × × × × × ×
+Kumyk
+Cyrl
+✓✓∼∼∼∼∼× × × ×
+Karachay-Balkar
+Cyrl
+✓✓∼× × × × × × × ×
+Karluk
+Uzbek
+Latn/Cyrl ✓✓✓✓✓✓✓× ✓✓✓
+Uyghur
+Arab/Latn ✓✓∼✓✓✓✓× ✓✓✓
+Siberian
+Sakha
+Cyrl
+✓✓∼∼∼∼∼× × × ×
+Altai
+Cyrl
+✓✓∼∼∼∼× × × × ×
+Tuvan
+Cyrl
+✓✓∼∼∼∼× × × × ×
+Khakas
+Cyrl
+✓✓∼∼∼∼× × × × ×
+Oghur
+Chuvash
+Cyrl
+✓✓∼∼∼∼× × × × ×
+Historical
+Ottoman Turkish Arab
+✓× × ✓✓✓✓× ✓× ×
+Old Turkish
+Orkh
+✓× × × × × × × ✓× ×
+Arghu
+Khalaj
+Arab
+✓✓× ∼∼∼× × × × ×
+Table 3: Script and processor availability for all 24 Tur-
+kicNLP languages. Script codes: Latn = Latin, Cyrl
+= Cyrillic, Arab = Perso-Arabic, Orkh = Old Turkic
+Runic; primary script listed first for dual-script lan-
+guages.
+Morph (Neu) = Glot500-based neural mor-
+phological analyzer and lemmatizer.
+POS Tag, Lem-
+matize, and Dep. Parse reflect combined Stanza and
+Glot500 backend coverage.
+✓= production/stable,
+∼= beta/prototype/zero-shot, × = not available, – = not
+applicable.
+5
+Processing Capabilities
+The processing pipeline maps each stage to one
+or more interchangeable backends. For tokeniza-
+tion, a rule-based segmenter handles Latin- and
+Cyrillic-script input, with a dedicated Arabic-
+script tokenizer for right-to-left languages; neural
+Stanza (Qi et al., 2020) tokenizers are used for
+10
+
+the five UD-treebank languages (Turkish, Kazakh,
+Kyrgyz, Uyghur, Ottoman Turkish) and for five
+additional languages with custom-trained models
+(Uzbek, Azerbaijani, Turkmen, Tatar, Bashkir).
+Morphological analysis draws on Apertium FST bi-
+naries (Forcada et al., 2011) for 20 languages: Kyr-
+gyz (Washington et al., 2012), Tatar-Bashkir (Tyers
+et al., 2012), Kazakh & Tatar (Salimzyanov et al.,
+2013), Kazakh,Tatar & Kumyk (Washington et al.,
+2014), Tuvan (Tyers et al., 2016; Washington et al.,
+2016), Kazakh & Turkish (Bayatlı et al., 2018),
+Crimean Tatar (Tyers et al., 2019), Crimean Tatar
+& Turkish (Gökırmak et al., 2019), Crimean Tatar,
+Kazakh, Kyrgyz, Turkmen, Karakalpak, Uzbek, &
+Uyghur (Washington et al., 2020a), Sakha (Ivanova
+et al., 2022).
+POS tagging, lemmatization, and dependency
+parsing are provided via Stanza neural models
+for those ten languages.
+Two multilingual neu-
+ral models built on a frozen Glot500 (Imani et al.,
+2023) backbone extend neural POS tagging and
+dependency parsing to 15 languages and mor-
+phological analysis with lemmatization to 23 lan-
+guages.
+Named entity recognition targets Turk-
+ish and Kazakh.
+Sentence embeddings and ma-
+chine translation use NLLB-200 (NLLB Team
+et al., 2022) for all 24 languages.
+Table 3 sum-
+marises component availability across all 24 lan-
+guages; runnable code samples for all supported lan-
+guages are available in the companion repository.8
+The following subsections describe each stage in de-
+tail.
+5.1
+Tokenization and Multi-Word Token
+Expansion
+TurkicNLP provides three tokenization backends.
+A rule-based tokenizer handles Latin- and Cyrillic-
+script input via whitespace segmentation augmented
+by punctuation attachment rules, clitic splitting, and
+intra-word apostrophe handling (e.g., Turkish pos-
+sessive forms). A dedicated Arabic-script tokenizer
+adds right-to-left support, including zero-width non-
+joiner splitting for Uyghur and Arabic-script punc-
+tuation handling.
+For the five Turkic languages
+with Universal Dependencies treebanks—Turkish,
+Kazakh, Kyrgyz, Uyghur, and Ottoman Turkish—
+a neural tokenizer built on Stanza (Qi et al., 2020)
+provides high-accuracy tokenization trained on UD
+gold data.
+Custom-trained Stanza tokenizers ad-
+ditionally support Uzbek, Azerbaijani, Turkmen,
+8https://github.com/turkic-nlp/turkic-
+nlp-code-samples
+Tatar, and Bashkir. A dedicated multi-word token
+(MWT) processor applies per-language rule tables
+covering 21 languages, splitting agglutinated forms
+before downstream morphological analysis.
+5.2
+Morphological Analysis
+Morphological analysis is provided through Aper-
+tium finite-state transducer (FST) binaries com-
+piled for 20 Turkic languages, accessed via Python-
+native HFST bindings without requiring a system-
+level Apertium installation.
+For a given token,
+the FST returns zero or more analyses—each com-
+prising a lemma and a morphological tag string—
+which a tag-mapping subsystem converts to Uni-
+versal Dependencies features and UPOS labels fol-
+lowing the conventions established by Tyers and
+Washington (2015).
+Full UD mapping is imple-
+mented for Turkish, Kazakh, and Tatar; partial cov-
+erage is available for the remaining 17 languages.
+Morphological ambiguity is resolved using a com-
+bination of FST-internal HFST weights and heuris-
+tic scoring based on syntactic position, POS cate-
+gory priority, and lexicon lookups. This remains a
+known limitation for agglutinative languages where
+local context strongly determines the correct read-
+ing; a lightweight sequence-based disambiguator is
+planned for a future release. The FST analyzers ad-
+ditionally support generation mode: given a lemma
+and feature string, the transducer synthesizes the
+corresponding surface form, useful for data augmen-
+tation tasks. Table 4 lists quality levels per language.
+5.3
+POS Tagging, Lemmatization, and
+Dependency Parsing
+For the five Turkic languages with UD treebanks,
+TurkicNLP provides neural POS tagging, lemma-
+tization, and dependency parsing via Stanza (Qi
+et al., 2020), producing UPOS, XPOS, morpholog-
+ical features, lemma, and CoNLL-U dependency
+arcs in a single pass using biaffine attention-based
+models.
+Turkish offers seven treebank variants:
+IMST (general-domain default), BOUN, FrameNet,
+KeNet, ATIS, Penn, and Tourism; Kazakh uses
+KTB, Kyrgyz the KTMU treebank, Uyghur the
+UDT treebank, and Ottoman Turkish the BOUN
+treebank.
+The active treebank may be specified
+as a pipeline configuration parameter.
+In addi-
+tion, custom-trained Stanza models provide full
+neural pipeline support (tokenization, POS tag-
+ging, lemmatization, and dependency parsing) for
+Uzbek, Azerbaijani, Turkmen, Tatar, and Bashkir,
+extending neural parsing coverage to ten Turkic
+11
+
+Language
+ISO
+Branch
+Quality
+Turkish
+tur
+Oghuz
+Production
+Kazakh
+kaz
+Kipchak
+Production
+Tatar
+tat
+Kipchak
+Production
+Azerbaijani
+aze
+Oghuz
+Stable
+Kyrgyz
+kir
+Kipchak
+Stable
+Uzbek
+uzb
+Karluk
+Stable
+Turkmen
+tuk
+Oghuz
+Beta
+Bashkir
+bak
+Kipchak
+Beta
+Uyghur
+uig
+Karluk
+Beta
+Crimean Tatar
+crh
+Kipchak
+Beta
+Chuvash
+chv
+Oghur
+Beta
+Sakha
+sah
+Siberian
+Prototype
+Karakalpak
+kaa
+Kipchak
+Prototype
+Nogai
+nog
+Kipchak
+Prototype
+Kumyk
+kum
+Kipchak
+Prototype
+Karachay-Balkar
+krc
+Kipchak
+Prototype
+Altai
+alt
+Siberian
+Prototype
+Tuvan
+tyv
+Siberian
+Prototype
+Khakas
+kjh
+Siberian
+Prototype
+Gagauz
+gag
+Oghuz
+Prototype
+Table 4: Apertium FST analyzer quality levels (based
+on Apertium lexicon size and UD tag-mapping complete-
+ness). Production: estimated >85% token coverage, full
+UD FEATS mapping. Stable: >70% coverage, partial
+UD mapping. Beta: functional with known lexicon gaps.
+Prototype: limited coverage, Apertium-native tags only.
+languages in total.
+For Apertium-backed mor-
+phological analysis on any of the 20 supported
+languages, the same Pipeline interface ap-
+plies with morph_backend=”apertium” and
+processors=[”tokenize”,”morph”];
+the
+pipeline
+then
+populates
+w.lemma
+and
+w.feats from the FST output (see Listing 1
+for the analogous Turkish example).
+5.4
+Multilingual Neural Models (Glot500)
+In addition to the per-language Stanza models, Tur-
+kicNLP provides two multilingual neural models
+that share a common architecture: a frozen Glot500
+(Imani et al., 2023) encoder serves as the backbone,
+followed by trainable per-script adapters (Latin,
+Cyrillic, Arabic), per-language embedding vectors,
+and a shared two-layer BiLSTM, which feeds into
+task-specific heads. This design forces cross-lingual
+transfer through shared weights while accommodat-
+ing script diversity through lightweight adapter mod-
+ules.
+POS Tagger & Dependency Parser.
+The first
+model jointly predicts UPOS tags and labeled de-
+pendency arcs. It was trained in Phase 1 (frozen
+backbone with only adapters, language embeddings,
+BiLSTM, and task heads trained) on all available
+Universal Dependencies treebanks for 10 Turkic
+languages: Turkish (9 treebanks, 82K sentences),
+Azerbaijani, Turkmen, Bashkir, Uyghur, Kyrgyz,
+Ottoman Turkish, Tatar, Uzbek, and Kazakh—
+totaling 116K sentences from 20 UD treebanks.
+The dependency parsing head uses biaffine atten-
+tion (Dozat and Manning, 2017). Five additional
+languages—Karakalpak, Kumyk, Sakha, Karachay-
+Balkar, and Nogai—are supported in zero-shot
+mode via proxy language embeddings from closely
+related trained languages.
+Morphological Analyzer & Lemmatizer.
+The
+second model predicts UPOS tags, 69 UD mor-
+phological feature–value pairs (as a multi-label sig-
+moid classification), and lemmas via edit-script
+classification (a character-level CNN that predicts
+surface-to-lemma transformations). Training pro-
+ceeded in two phases: Phase 1 with the backbone
+frozen and Phase 2 with the top encoder layers par-
+tially unfrozen using discriminative learning rates.
+The training data combines three complementary
+sources: (1) UD treebanks for 10 languages provid-
+ing words in sentence context with gold annotations;
+(2) morphological paradigm tables from UniMorph
+(Sylak-Glassman, 2016) covering 13 Turkic lan-
+guages with approximately 1.9M entries; and (3) in-
+flectional paradigms extracted from Wiktionary us-
+ing Wiktextract (Ylonen, 2022) for 20 languages
+with approximately 4.8M form triples. This com-
+bination extends coverage to 20 Turkic languages
+in total: 10 with full UD training data and 10 ad-
+ditional languages (Crimean Tatar, Sakha, Tuvan,
+Khakas, Altai, Kumyk, Gagauz, Chuvash, Kha-
+laj, and Northern Altai) trained on paradigm data
+only.
+Three additional languages—Karakalpak,
+Karachay-Balkar, and Nogai—are supported in
+zero-shot mode, bringing the total to 23 languages.
+Both models use temperature-based sampling
+(T = 2.0) during training to balance the heav-
+ily skewed data distribution (Turkish:
+82K vs.
+Kazakh: 1K sentences) and are available via pip
+install turkicnlp[transformers].
+5.5
+Named Entity Recognition
+NER is available at production quality for Turkish
+and Kazakh.
+The Turkish model, integrated via
+Stanza, is trained on the Starlang annotated corpus
+and recognizes four entity types (person, organiza-
+tion, location, miscellaneous). The Kazakh model
+is trained on KazNERD (Yeshpanov et al., 2022),
+a fine-grained corpus of 112,702 annotated tokens
+spanning 25 entity classes. Named entity spans are
+12
+
+stored as structured objects on the document entity
+list with character offsets and type labels.
+5.6
+Sentence Embeddings and Machine
+Translation
+TurkicNLP integrates NLLB-200 (NLLB Team
+et al., 2022)9 for cross-lingual sentence embeddings
+and machine translation across all 24 supported lan-
+guages, including low-resource varieties absent
+from alternatives such as LaBSE (Feng et al., 2022)
+and LASER (Heffernan et al., 2022). The embed-
+dings processor extracts document-level representa-
+tions
+via
+processors=[”embeddings”],
+producing
+a
+doc.embedding
+vector
+for
+cross-lingual
+similarity,
+clustering,
+or
+classi-
+fication.
+The translation processor accepts a
+translate_tgt_lang NLLB language code
+and produces doc.translation; beam size is
+configurable via the num_beams parameter. Both
+components are available via pip install
+turkicnlp[nllb].
+6
+Evaluation
+6.1
+Morphological Analysis
+To
+assess
+the
+two
+morphological
+analysis
+backends—Apertium FST (rule-based) and the
+Glot500-based
+neural
+analyzer—we
+designed
+a set of 20 parallel challenge sentences target-
+ing core grammatical phenomena: case marking
+(genitive, accusative, locative, ablative, dative),
+verbal categories (past, present progressive, fu-
+ture, negation, imperative, conditional, evidential,
+passive), and additional features (plural nouns,
+possessives, pronouns, reciprocals, numerals, con-
+verbs). Each sentence was translated into 20 Turkic
+languages (Appendix A). For each sentence, we
+check whether the expected UD feature (e.g.,
+Case=Acc, Tense=Past) appears in at least
+one analysed token.
+Table 5 reports three metrics per backend and
+language: Det% (detection accuracy)—the frac-
+tion of 20 challenge sentences where the expected
+grammatical phenomenon was correctly identified;
+Ana% (analysis coverage)—the fraction of content
+words that received a UPOS tag other than X; and
+Feat% (feature coverage)—the fraction of content
+words annotated with at least one morphological fea-
+ture. Lemma coverage is omitted from the table as
+9https://huggingface.co/facebook/nllb-
+200-distilled-600M
+it is 100% for all languages and backends except
+Uyghur neural (65%).
+The neural backend achieves higher average de-
+tection accuracy (68% vs. 53%) and substantially
+better feature coverage (88% vs. 54%), benefit-
+ing from its training on UD treebanks, UniMorph
+paradigms, and Wiktionary data.
+It wins on
+17 of 20 languages.
+The Apertium FST back-
+end outperforms on three languages: Uzbek and
+Uyghur (where Apertium has mature transduc-
+ers but the neural model lacks sufficient training
+data) and Chuvash (where the Oghur branch’s di-
+vergent morphology challenges the neural model’s
+cross-lingual transfer).
+The most dramatic gaps
+appear for prototype-level Apertium languages—
+Khakas (10% vs. 85% detection) and Karachay-
+Balkar (10% vs. 70%)—where the FST lexicons re-
+main small. Conversely, production-level Apertium
+languages (Turkish: 75%, Uzbek: 75%) approach
+neural performance on detection, indicating that
+the two backends are complementary: rule-based
+transducers excel where hand-curated lexicons exist,
+while neural transfer fills gaps for under-resourced
+languages.
+6.2
+POS Tagging and Dependency Parsing
+We evaluate POS tagging and dependency pars-
+ing by comparing the per-language Stanza mod-
+els (§5.3) against the multilingual Glot500 joint
+POS tagger and dependency parser (§5.4).
+Test
+data for Turkish, Kazakh, Kyrgyz, Uyghur, Uzbek,
+Karakalpak, Kumyk, and Sakha are drawn from the
+Parallel Universal Dependencies Treebanks for Tur-
+kic Languages (Akhundjanova et al., 2025);10 test
+sets for Azerbaijani, Bashkir, Turkmen, and Tatar
+are sourced from a complementary generated UD
+collection.11 All test files use gold tokenization for
+the parsing evaluation; tokenization F1 is reported
+separately for the Stanza backend.
+Table 6 reports UPOS accuracy, UAS, and LAS
+for both backends across 12 languages. The Stanza
+backend provides per-language models for 9 lan-
+guages; the Glot500 multilingual model covers all
+12, including three zero-shot languages (Karakalpak
+via Uzbek, Kumyk via Tatar, Sakha via Bashkir
+proxy embeddings).
+The Glot500 multilingual model outperforms the
+per-language Stanza models on average across all
+three metrics: UPOS accuracy (84.9% vs. 81.9%),
+10https://github.com/ud-turkic/parallel
+11https://github.com/turkic-nlp/
+generated-ud-data
+13
+
+Apertium FST
+Neural (Glot500)
+Language
+ISO
+Scr
+Det%
+Ana%
+Feat%
+Det%
+Ana%
+Feat%
+Turkish
+tur
+Latn
+75
+98
+83
+80
+100
+90
+Azerbaijani
+aze
+Latn
+50
+53
+42
+75
+100
+79
+Turkmen
+tuk
+Latn
+70
+69
+49
+75
+100
+90
+Gagauz
+gag
+Latn
+70
+89
+73
+75
+100
+94
+Kazakh
+kaz
+Cyrl
+60
+97
+69
+70
+100
+82
+Kyrgyz
+kir
+Cyrl
+60
+100
+76
+60
+100
+92
+Tatar
+tat
+Cyrl
+50
+89
+45
+75
+100
+89
+Bashkir
+bak
+Cyrl
+60
+97
+56
+75
+100
+89
+Crimean Tatar
+crh
+Latn
+65
+95
+70
+75
+100
+89
+Karakalpak
+kaa
+Latn
+45
+52
+32
+50
+100
+86
+Nogai
+nog
+Cyrl
+50
+72
+56
+55
+100
+93
+Kumyk
+kum
+Cyrl
+55
+84
+69
+70
+100
+95
+Karachay-Balkar
+krc
+Cyrl
+10
+3
+3
+70
+100
+97
+Uzbek
+uzb
+Latn
+75
+98
+80
+55
+100
+87
+Uyghur
+uig
+Arab
+60
+100
+63
+55
+100
+60
+Sakha
+sah
+Cyrl
+45
+73
+63
+60
+100
+85
+Altai
+alt
+Cyrl
+30
+36
+25
+75
+100
+89
+Tuvan
+tyv
+Cyrl
+55
+92
+69
+75
+100
+89
+Khakas
+kjh
+Cyrl
+10
+6
+3
+85
+100
+89
+Chuvash
+chv
+Cyrl
+70
+100
+57
+60
+100
+92
+Average
+53
+75
+54
+68
+100
+88
+Table 5: Morphological analysis evaluation on 20 challenge sentences per language (Appendix A). Det%: fraction
+of sentences where the target UD feature was detected. Ana%: fraction of content words receiving a valid UPOS
+tag. Feat%: fraction of content words with morphological features. Bold marks the better backend per language and
+metric. Languages are grouped by branch: Oghuz, Kipchak, Karluk, Siberian, and Oghur. The neural backend wins
+on 17/20 languages (by detection accuracy); Apertium leads for Uzbek, Uyghur, and Chuvash.
+UAS (76.8% vs. 69.8%), and LAS (63.6% vs.
+56.4%).
+The multilingual model wins on 7 of
+9 shared languages for LAS, with particularly large
+gains for Uzbek (+21.8 LAS), Kyrgyz (+11.5), and
+Tatar (+12.7). Stanza retains a narrow POS advan-
+tage on Turkmen (86.1 vs. 85.8) and Tatar (86.2 vs.
+79.3), although the Tatar test set contains only 29
+tokens. The three zero-shot languages demonstrate
+that cross-lingual transfer via proxy embeddings
+provides usable parsing even without any target-
+language training data: Karakalpak achieves 82.1%
+UPOS and 51.0 LAS via Uzbek, while Kumyk
+(via Tatar) and Sakha (via Bashkir) show lower
+but functional parsing quality.
+Tokenization F1
+for the Stanza backend exceeds 96% on all tested
+languages, reaching 100% on Tatar and 99.9% on
+Uyghur.
+Systematic evaluation of NER (entity-level F1 for
+Turkish and Kazakh) is planned for a future version
+of this paper.
+7
+Conclusion
+We have presented TurkicNLP, a unified, open-
+source Python NLP toolkit designed to address the
+fragmentation and resource scarcity that has long
+characterised computational work on the Turkic lan-
+guage family.
+By providing a single, consistent
+pipeline interface across 24 languages—spanning
+tokenization, morphological analysis, POS tagging,
+lemmatization, dependency parsing, named entity
+recognition, transliteration, sentence embeddings,
+and machine translation—the library enables re-
+searchers and practitioners to work across the
+breadth of the Turkic family without assembling
+custom toolchains for each language.
+Its script-
+aware architecture handles the orthographic diver-
+sity of the family automatically, and its catalog-
+driven model management keeps the library core
+lightweight while supporting selective installation of
+heavier backends. We hope that TurkicNLP lowers
+the barrier to entry for work on the 200+ million
+speakers of Turkic languages, particularly the many
+languages that currently have limited or no digital
+NLP infrastructure.
+8
+Future Directions
+Near-term development focuses on expanding neu-
+ral pipeline coverage to additional languages using
+available pretrained encoders, adding training in-
+frastructure so researchers can contribute custom
+14
+
+Stanza (per-language)
+Glot500 (multilingual)
+Language
+ISO
+n
+UPOS
+UAS
+LAS
+UPOS
+UAS
+LAS
+Turkish
+tur
+877
+85.1
+75.3
+63.5
+86.9
+84.9
+70.1
+Azerbaijani
+aze
+869
+84.9
+72.3
+60.8
+87.0
+76.2
+64.6
+Turkmen
+tuk
+825
+86.1
+76.8
+67.8
+85.8
+77.8
+68.4
+Kazakh
+kaz
+851
+87.9
+67.4
+57.4
+88.8
+71.5
+59.7
+Kyrgyz
+kir
+1166
+71.1
+50.2
+29.4
+79.0
+63.8
+40.9
+Bashkir
+bak
+814
+87.0
+72.8
+62.5
+89.6
+76.1
+64.1
+Tatar
+tat
+29
+86.2
+69.2
+57.7
+79.3
+77.8
+70.4
+Uyghur
+uig
+758
+76.9
+77.1
+62.3
+79.7
+81.7
+66.9
+Uzbek
+uzb
+905
+71.8
+67.2
+46.3
+87.6
+81.4
+68.1
+Karakalpak†
+kaa
+1126
+—
+—
+—
+82.1
+67.5
+51.0
+Kumyk†
+kum
+144
+—
+—
+—
+78.5
+60.7
+45.9
+Sakha†
+sah
+16
+—
+—
+—
+93.8
+60.0
+46.7
+Avg (9 shared)
+81.9
+69.8
+56.4
+84.9
+76.8
+63.6
+Table 6: POS tagging and dependency parsing evaluation on Parallel Turkic UD test sets (Akhundjanova et al., 2025).
+n: number of tokens in the test set. UPOS: POS tagging accuracy. UAS/LAS: unlabeled/labeled attachment scores.
+Bold marks the better backend per language and metric.
+†Zero-shot languages (shaded): no per-language Stanza
+model available; Glot500 uses proxy language embeddings. Averages are computed over the 9 languages where both
+backends are available.
+models, integrating ASR and TTS components to
+extend the pipeline to spoken language, and con-
+ducting a systematic evaluation campaign across all
+supported languages and processors.
+15
+
+References
+1991. Proceedings of the symposium on modern alpha-
+bets of turkic countries. In Marmara University Insti-
+tute of Turkic Studies, Istanbul, Turkey. Foundational
+proposal for the 34-letter Latin-based common alpha-
+bet.
+Nilufar Z. Abdurakhmonova, Alisher S. Ismailov, and
+Davlatyor Mengliev. 2022. Developing NLP tool for
+linguistic analysis of Turkic languages. In 2022 IEEE
+International Multi-Conference on Engineering, Com-
+puter and Information Sciences (SIBIRCON), pages
+1790–1793, Yekaterinburg, Russian Federation.
+Arofat Akhundjanova, Furkan Akkurt, Bermet Chon-
+taeva, Soudabeh Eslami, and Cagri Coltekin. 2025.
+Parallel Universal Dependencies treebanks for Turkic
+languages.
+In Proceedings of the Eighth Workshop
+on Universal Dependencies (UDW, SyntaxFest 2025),
+pages 129–136, Ljubljana, Slovenia. Association for
+Computational Linguistics.
+Arofat Akhundjanova and Luigi Talamo. 2025. Univer-
+sal dependencies treebank for Uzbek. In Proceedings
+of the Third Workshop on Resources and Representa-
+tions for Under-Resourced Languages and Domains
+(RESOURCEFUL-2025), pages 1–9, Tallinn, Estonia.
+Ahmet Afşin Akın and Mehmet Dündar Akın. 2007.
+Zemberek, an open source nlp framework for turkic
+languages. In Structure, volume 10, pages 1–5.
+Rami Al-Rfou’, Bryan Perozzi, and Steven Skiena. 2013.
+Polyglot: Distributed word representations for multi-
+lingual NLP. In Proceedings of the Seventeenth Con-
+ference on Computational Natural Language Learning,
+pages 183–192, Sofia, Bulgaria. Association for Com-
+putational Linguistics.
+Huseyin Alecakir, Necva Bölücü, and Burcu Can. 2022.
+TurkishDelightNLP: A neural Turkish NLP toolkit.
+In Proceedings of the 2022 Conference of the North
+American Chapter of the Association for Computa-
+tional Linguistics:
+Human Language Technologies:
+System Demonstrations, pages 17–26, Hybrid: Seattle,
+Washington + Online. Association for Computational
+Linguistics.
+Anton Alekseev and Timur Turatali. 2025. KyrgyzNLP:
+Challenges, progress, and future. In Analysis of Im-
+ages, Social Networks and Texts: 12th International
+Conference, AIST 2024, Bishkek, Kyrgyzstan, Octo-
+ber 17–19, 2024, Revised Selected Papers, pages 3–39,
+Berlin, Heidelberg. Springer.
+Duygu Altinok. 2023. Turkish NLP suite. https://
+github.com/turkish-nlp-suite.
+Open-
+source collection including spaCy Turkish models,
+SentiTurca, TrGLUE, InstructTurca, and BellaTurca.
+Rosana Ardila, Megan Branson, Kelly Davis, Michael
+Kohler, Josh Meyer, Michael Henretty, Reuben
+Morais, Lindsay Saunders, Francis Tyers, and Gre-
+gor Weber. 2020.
+Common voice: A massively-
+multilingual speech corpus.
+In Proceedings of the
+Twelfth Language Resources and Evaluation Confer-
+ence, pages 4218–4222, Marseille, France. European
+Language Resources Association.
+Ahmet Bayatlı, Memduh Gökırmak, Francis M. Tyers,
+and Jonathan N. Washington. 2018.
+A free/open-
+source Kazakh–Turkish machine translation system.
+In Proceedings of the 21st Annual Conference of the
+European Association for Machine Translation, pages
+59–68, Alicante, Spain.
+M. Ali Bayram, Ali Arda Fincan, Ahmet Semih
+Gümüş, Banu Diri, Savaş Yıldırım, and Öner Ay-
+taş. 2025.
+Setting standards in Turkish NLP: TR-
+MMLU for large language model evaluation. Preprint,
+arXiv:2501.00593.
+A. Bekarystankyzy, Orken J. Mamyrbayev, Mateus
+Mendes, A. Fazylzhanova, and Muhammad Assam.
+2024. Multilingual end-to-end ASR for low-resource
+Turkic languages with common alphabets. Scientific
+Reports, 14.
+Steven Bird, Ewan Klein, and Edward Loper. 2009. Nat-
+ural Language Processing with Python. O’Reilly Me-
+dia.
+Recep Firat Cekinel and Çağrı Çöltekin. 2025. A sur-
+vey of Turkic language modeling: Challenges, re-
+sources and future directions. In 2025 10th Interna-
+tional Conference on Computer Science and Engineer-
+ing (UBMK), pages 1667–1672.
+Alexis Conneau, Kartikay Khandelwal, Naman Goyal,
+Vishrav Chaudhary, Guillaume Wenzek, Francisco
+Guzmán, Edouard Grave, Myle Ott, Luke Zettle-
+moyer, and Veselin Stoyanov. 2020.
+Unsupervised
+cross-lingual representation learning at scale. In Pro-
+ceedings of the 58th Annual Meeting of the Association
+for Computational Linguistics, pages 8440–8451, On-
+line. Association for Computational Linguistics.
+Alexis Conneau, Min Ma, Simran Khanuja, Yu Zhang,
+Vera Axelrod, Siddharth Dalmia, Jason Havber, Fan-
+tine Cox, and 1 others. 2022.
+FLEURS: Few-shot
+learning evaluation of universal representations of
+speech. In Proceedings of the 2022 IEEE Spoken Lan-
+guage Technology Workshop (SLT), pages 798–806.
+IEEE.
+Marie-Catherine de Marneffe, Christopher D. Manning,
+Joakim Nivre, and Daniel Zeman. 2021. Universal
+Dependencies. Computational Linguistics, 47(2):255–
+308.
+Mehmet Oguz Derin and Takahiro Harada. 2021. Uni-
+versal Dependencies for Old Turkish.
+In Proceed-
+ings of the Fifth Workshop on Universal Dependencies
+(UDW, SyntaxFest 2021), pages 129–141, Sofia, Bul-
+garia. Association for Computational Linguistics.
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and
+Kristina Toutanova. 2019.
+BERT: Pre-training of
+deep bidirectional transformers for language under-
+standing. In Proceedings of the 2019 Conference of
+the North American Chapter of the Association for
+16
+
+Computational Linguistics: Human Language Tech-
+nologies, Volume 1 (Long and Short Papers), pages
+4171–4186, Minneapolis, Minnesota. Association for
+Computational Linguistics.
+Timothy Dozat and Christopher D. Manning. 2017.
+Deep biaffine attention for neural dependency parsing.
+In Proceedings of the 5th International Conference on
+Learning Representations (ICLR).
+Wenqiang Du, Yikeremu Maimaitiyiming, Mewlude Ni-
+jat, Lantian Li, Askar Hamdulla, and Dong Wang.
+2023.
+Automatic speech recognition for Uyghur,
+Kazakh, and Kyrgyz: An overview. Applied Sciences,
+13(1):326.
+Marhaba Eli, Weinila Mushajiang, Tuergen Yibulayin,
+Kahaerjiang Abiderexiti, and Yan Liu. 2016.
+Uni-
+versal dependencies for Uyghur.
+In Proceedings
+of the Third International Workshop on Worldwide
+Language Service Infrastructure and Second Work-
+shop on Open Infrastructures and Analysis Frame-
+works for Human Language Technologies (WL-
+SI/OIAF4HLT2016), pages 44–50, Osaka, Japan. The
+COLING 2016 Organizing Committee.
+Yakup Abrek Er, Ilker Kesen, Gözde Gül Şahin, and
+Aykut Erdem. 2026. Cetvel: A unified benchmark
+for evaluating language understanding, generation and
+cultural capacity of LLMs for Turkish. In Proceedings
+of the 19th Conference of the European Chapter of the
+Association for Computational Linguistics (Volume 1:
+Long Papers), pages 1052–1085, Rabat, Morocco. As-
+sociation for Computational Linguistics.
+Gülşen Eryiğit. 2014. ITU Turkish NLP web service. In
+Proceedings of the Demonstrations at the 14th Confer-
+ence of the European Chapter of the Association for
+Computational Linguistics (EACL), Gothenburg, Swe-
+den. Association for Computational Linguistics.
+Gülşen Eryiğit and 1 others. 2023.
+ITU NLP tools
+and resources.
+https://ddi.itu.edu.tr/
+en/toolsandresources.
+Istanbul Technical
+University, Department of Informatics.
+Fangxiaoyu Feng, Yinfei Yang, Daniel Cer, Naveen Ari-
+vazhagan, and Wei Wang. 2022. Language-agnostic
+BERT sentence embedding.
+In Proceedings of the
+60th Annual Meeting of the Association for Compu-
+tational Linguistics (Volume 1: Long Papers), pages
+878–891, Dublin, Ireland. Association for Computa-
+tional Linguistics.
+Mikel L. Forcada, Mireia Ginestí-Rosell, Jacob Nord-
+falk, Jim O’Regan, Sergio Ortiz-Rojas, Juan An-
+tonio Pérez-Ortiz, Felipe Sánchez-Martínez, Gema
+Ramírez-Sánchez, and Francis M. Tyers. 2011. Aper-
+tium: a free/open-source platform for rule-based ma-
+chine translation.
+Machine Translation, 25(2):127–
+144.
+Ayrat Gatiatullin, Nikolai Prokopyev, Lenara Kubedi-
+nova, Nilufar Abdurakhmonova, and Rustam Burna-
+shev. 2024. Linguistic knowledge graph “Turklang”
+as universal model for linguistic resources and tools in
+Turkic languages. In 2024 9th International Confer-
+ence on Computer Science and Engineering (UBMK),
+pages 1–5.
+Memduh Gökırmak, Francis M. Tyers, and Jonathan N.
+Washington. 2019.
+A free/open-source Crimean
+Tatar–Turkish machine translation system.
+In Pro-
+ceedings of the 3rd Workshop on Technologies for MT
+of Low Resource Languages, pages 36–44, Dublin, Ire-
+land.
+Dirk Goldhahn, Thomas Eckart, and Uwe Quasthoff.
+2012. Building large monolingual dictionaries at the
+Leipzig Corpora Collection: From 100 to 200 lan-
+guages.
+In Proceedings of the Eighth International
+Language Resources and Evaluation (LREC’12), pages
+759–765, Istanbul, Turkey. European Language Re-
+sources Association (ELRA).
+Mika Hämäläinen. 2019.
+UralicNLP: An NLP li-
+brary for Uralic languages.
+In Proceedings of the
+22nd Nordic Conference on Computational Linguistics
+(NoDaLiDa), pages 338–340.
+Kevin Heffernan, Onur Çelebi, and Holger Schwenk.
+2022.
+Bitext mining using distilled sentence repre-
+sentations for low-resource languages. In Findings of
+the Association for Computational Linguistics: EMNLP
+2022, pages 2101–2112, Abu Dhabi, United Arab
+Emirates. Association for Computational Linguistics.
+Matthew Honnibal, Ines Montani, Sofie Van Landeghem,
+and Adriane Boyd. 2020. spaCy: Industrial-strength
+Natural Language Processing in Python. Zenodo.
+Khayyam Ibiyev and Attila Novak. 2021. Using zero-
+shot transfer to initialize azWikiNER, a gold standard
+named entity corpus for the Azerbaijani language.
+In Text, Speech, and Dialogue (TSD 2021), volume
+12848 of Lecture Notes in Computer Science, pages
+309–320. Springer, Cham.
+Ayyoob Imani, Peiqin Lin, Amir Hossein Kargaran,
+Silvia Severini, Masoud Jalili Sabet, Nora Kass-
+ner, Chunlan Ma, Helmut Schmid, André Martins,
+François Yvon, and Hinrich Schütze. 2023. Glot500:
+Scaling multilingual corpora and language models to
+500 languages.
+In Proceedings of the 61st Annual
+Meeting of the Association for Computational Lin-
+guistics (Volume 1: Long Papers), pages 1082–1117,
+Toronto, Canada. Association for Computational Lin-
+guistics.
+International Turkic Academy. 2024. Agreement on the
+unified 34-letter latin-based common turkic alphabet.
+Jafar Isbarov, Arofat Akhundjanova, Mammad Hajili,
+Kavsar Huseynova, Dmitry Gaynullin, Anar Rzayev,
+Osman Tursun, Aizirek Turdubaeva, Ilshat Saetov,
+Ravshan Niyazov, Almas Toleu, Soroush Faghani,
+Tofig Sadigov, Pavel Braslavski, Sobir Kariev, and
+Ackbar Abbas. 2025.
+TUMLU: A unified and na-
+tive language understanding benchmark for Turkic
+languages. In Proceedings of the 63rd Annual Meeting
+of the Association for Computational Linguistics (Vol-
+ume 1: Long Papers), pages 20111–20129, Bangkok,
+Thailand. Association for Computational Linguistics.
+17
+
+Jafar Isbarov, Kavsar Huseynova, Elvin Mammadov,
+Mammad Hajili, and Duygu Ataman. 2024.
+Open
+foundation models for Azerbaijani language. In Pro-
+ceedings of the First Workshop on Natural Language
+Processing for Turkic Languages (SIGTURK 2024),
+pages 18–28, Bangkok, Thailand and Online. Asso-
+ciation for Computational Linguistics.
+ISSAI. 2023. TatSC: Tatar speech corpus (269 hours).
+HuggingFace.
+ISSAI. 2024. TSC: Turkish speech corpus (218 hours).
+HuggingFace.
+Sardana Ivanova, Francis M. Tyers, and Jonathan N.
+Washington. 2022. A finite-state morphological ana-
+lyzer for Sakha. In Proceedings of the Thirteenth Lan-
+guage Resources and Evaluation Conference, pages
+6232–6238, Marseille, France. European Language
+Resources Association.
+Lars Johanson. 2021. Turkic. Cambridge Language Sur-
+veys. Cambridge University Press.
+Pratik Joshi, Sebastin Santy, Amar Budhiraja, Kalika
+Bali, and Monojit Choudhury. 2020. The state and
+fate of linguistic diversity and inclusion in the NLP
+world. In Proceedings of the 58th Annual Meeting of
+the Association for Computational Linguistics, pages
+6282–6293, Online. Association for Computational
+Linguistics.
+Daniel Jurafsky and James H. Martin. 2026.
+Speech
+and Language Processing: An Introduction to Natu-
+ral Language Processing, Computational Linguistics,
+and Speech Recognition, with Language Models, 3rd
+edition. Stanford University. Online manuscript re-
+leased January 6, 2026.
+Fajri Koto and 1 others. 2025.
+Sherkala: An open
+Kazakh large language model.
+arXiv preprint
+arXiv:2503.01493.
+Elmurod Kuriyozov, Yerai Doval, and Carlos Gómez-
+Rodríguez. 2020. Cross-lingual word embeddings for
+Turkic languages. In Proceedings of the Twelfth Lan-
+guage Resources and Evaluation Conference, pages
+4054–4062, Marseille, France. European Language
+Resources Association.
+Elmurod Kuriyozov, David Vilares, and Carlos Gómez-
+Rodríguez. 2024. BERTbek: A pretrained language
+model for Uzbek.
+In Proceedings of the 3rd An-
+nual Meeting of the Special Interest Group on Under-
+resourced Languages @ LREC-COLING 2024, pages
+33–44, Torino, Italia. ELRA and ICCL.
+LocalDoc. 2024. Azerbaijani named entity recognition
+dataset. HuggingFace. 99,545 examples, 25 entity
+types, CC BY-NC-ND 4.0.
+LocalDoc. 2025. Azerbaijani ASR dataset. Hugging-
+Face. 334 hours, 351K audio-text pairs, 16 kHz, CC
+BY-NC 4.0.
+Aibek Makazhanov. 2020.
+KazNLP: NLP tools
+for Kazakh language.
+https://github.com/
+makazhan/kaznlp. GitHub repository.
+Olzhas Makhambetov, Aibek Makazhanov, Zhandos
+Yessenbayev,
+Bakhyt Matkarimov,
+Islam Sabyr-
+galiyev, and Anuar Sharafudinov. 2013.
+Assem-
+bling the Kazakh language corpus.
+In Proceedings
+of the 2013 Conference on Empirical Methods in Nat-
+ural Language Processing, pages 1022–1031, Seat-
+tle, Washington, USA. Association for Computational
+Linguistics.
+Mukhammadsaid Mamasaidov and 1 others. 2021.
+Tahrirchibert:
+A pretrained RoBERTa-based lan-
+guage model for Uzbek. HuggingFace Model Hub.
+Bahtiyar Mamedov. 2024.
+TurkmenSpeech: A Turk-
+men speech dataset (251 hours).
+HuggingFace.
+119,847 clips, 16 kHz, CC BY-NC 4.0.
+Jamshidbek Mansurov and Behzod Mansurov. 2021.
+UzBERT: A pretrained language model for Uzbek.
+arXiv preprint arXiv:2108.09814.
+Tatiana Merzhevich and Fabrício Ferraz Gerardi. 2022.
+Introducing YakuToolkit. Yakut treebank and mor-
+phological analyzer.
+In Proceedings of the 1st An-
+nual Meeting of the ELRA/ISCA Special Interest Group
+on Under-Resourced Languages, pages 185–188, Mar-
+seille, France. European Language Resources Associ-
+ation.
+Adilet Metinov. 2023.
+KyrgyzBERT: A pretrained
+BERT model for Kyrgyz. HuggingFace Model Hub.
+Lester James Miranda. 2023. calamanCy: A Tagalog
+natural language processing toolkit. In Proceedings
+of the 3rd Workshop for Natural Language Process-
+ing Open Source Software (NLP-OSS 2023), pages 1–
+7, Singapore. Association for Computational Linguis-
+tics.
+Jamshidbek Mirzakhalov, Anoop Babu, Duygu Ataman,
+Sherzod Kariev, Francis Tyers, Otabek Abduraufov,
+Mammad Hajili, Sardana Ivanova, Abror Khaytbaev,
+Antonio Laverghetta Jr., Bekhzodbek Moydinboyev,
+Esra Onal, Shaxnoza Pulatova, Ahsan Wahab, Orhan
+Firat, and Sriram Chellappan. 2021a. A large-scale
+study of machine translation in Turkic languages. In
+Proceedings of the 2021 Conference on Empirical
+Methods in Natural Language Processing, pages 5876–
+5890, Online and Punta Cana, Dominican Republic.
+Association for Computational Linguistics.
+Jamshidbek Mirzakhalov, Anoop Babu, Aigiz Kunafin,
+Ahsan Wahab, Bekhzodbek Moydinboyev, Sardana
+Ivanova, Mokhiyakhon Uzokova, Shaxnoza Pulatova,
+Duygu Ataman, Julia Kreutzer, Francis Tyers, Orhan
+Firat, John Licato, and Sriram Chellappan. 2021b.
+Evaluating multiway multilingual NMT in the Turkic
+languages. In Proceedings of the Sixth Conference on
+Machine Translation, pages 518–530, Online. Associ-
+ation for Computational Linguistics.
+18
+
+Saida Mussakhojayeva, Kudret Dauletbek, Rustem Yesh-
+panov, and Huseyin Atakan Varol. 2023a. Multilin-
+gual speech recognition for turkic languages. Infor-
+mation, 14(2):74.
+Saida
+Mussakhojayeva,
+Yerbolat
+Khassanov,
+and
+Huseyin Atakan Varol. 2021a.
+KSC2:
+Kazakh
+speech corpus 2.
+https://github.com/
+IS2AI/Kazakh-Speech-Corpus.
+ISSAI,
+Nazarbayev University. Open-source Kazakh ASR
+corpus with 1,200+ hours.
+Saida
+Mussakhojayeva,
+Yerbolat
+Khassanov,
+and
+Huseyin Atakan Varol. 2021b. USC: An open-source
+Uzbek speech corpus and initial speech recognition
+baseline. CoRR, abs/2107.14419.
+Saida
+Mussakhojayeva,
+Yerbolat
+Khassanov,
+and
+Huseyin Atakan Varol. 2022.
+KazakhTTS2: Ex-
+tending the open-source Kazakh TTS corpus with
+more data, speakers, and topics. In Proceedings of
+the Thirteenth Language Resources and Evaluation
+Conference, pages 5404–5411, Marseille, France.
+European Language Resources Association.
+Saida Mussakhojayeva, Yerbolat Khassanov, Rustem
+Yeshpanov, and Huseyin Atakan Varol. 2023b. Söyle:
+A noise-robust ASR system for 11 Turkic languages.
+GitHub Repository.
+Minh Van Nguyen, Viet Dac Lai, Amir Pouran Ben Vey-
+seh, and Thien Huu Nguyen. 2021. Trankit: A light-
+weight transformer-based toolkit for multilingual nat-
+ural language processing. In Proceedings of the 16th
+Conference of the European Chapter of the Association
+for Computational Linguistics: System Demonstrations,
+pages 80–90, Online. Association for Computational
+Linguistics.
+NLLB Team, Marta R. Costa-jussà, James Cross, Fran-
+cisco Guzmán, Kevin Heffernan, Armand Joulin, and
+1 others. 2022.
+No language left behind: Scaling
+human-centered machine translation. arXiv preprint
+arXiv:2207.04672.
+Kemal Oflazer and Murat Saraçlar, editors. 2018. Turk-
+ish Natural Language Processing.
+Theory and Ap-
+plications of Natural Language Processing. Springer,
+Cham.
+Daniil Orel, Askat Kuzdeuov, Rinat Gilmullin, Bu-
+lat Khakimov, and Huseyin Atakan Varol. 2024.
+TatarTTS: An open-source text-to-speech synthesis
+dataset for the Tatar language. In 2024 International
+Conference on Artificial Intelligence in Information
+and Communication (ICAIIC), pages 717–721.
+Daniil Orel, Rustem Yeshpanov, and Huseyin Atakan
+Varol. 2023. Speech recognition for turkic languages
+using cross-lingual transfer learning from kazakh. In
+2023 IEEE International Conference on Big Data and
+Smart Computing (BigComp), pages 174–182. IEEE.
+Organization of Turkic States. 2024. Declaration on the
+common turkic alphabet. Agreed upon by the Tur-
+kic World Common Alphabet Commission in Baku,
+September 2024.
+Şaziye Betül Özateş, Tarık Tıraş, Efe Genç, and Esma
+Bilgin Tasdemir. 2024.
+Dependency annotation of
+Ottoman Turkish with multilingual BERT.
+In Pro-
+ceedings of The 18th Linguistic Annotation Workshop
+(LAW-XVIII), pages 188–196, St. Julians, Malta. As-
+sociation for Computational Linguistics.
+Wannaphong Phatthiyaphaibun, Korakot Chaovavanich,
+Charin Polpanumas, Arthit Suriyawongkul, Lalita
+Lowphansirikul, Pattarawat Chormai, Peerat Limkon-
+chotiwat, Thanathip Suntorntip, and Can Udom-
+charoenchaikit. 2023. PyThaiNLP: Thai natural lan-
+guage processing in python.
+In Proceedings of the
+3rd Workshop for Natural Language Processing Open
+Source Software (NLP-OSS 2023), pages 25–36, Sin-
+gapore. Association for Computational Linguistics.
+Peng Qi, Yuhao Zhang, Yuhui Zhang, Jason Bolton, and
+Christopher D. Manning. 2020. Stanza: A Python
+Natural Language Processing Toolkit for Many Hu-
+man Languages. In Proceedings of the 58th Annual
+Meeting of the Association for Computational Linguis-
+tics: System Demonstrations, pages 101–108, Online.
+Association for Computational Linguistics.
+Ali Safaya, Emirhan Kurtuluş, Arda Goktogan, and
+Deniz Yuret. 2022. Mukayese: Turkish NLP strikes
+back.
+In Findings of the Association for Computa-
+tional Linguistics: ACL 2022, pages 846–863, Dublin,
+Ireland. Association for Computational Linguistics.
+H.
+Bahadir
+Sahin,
+Caglar
+Tirkaz,
+Eray
+Yildiz,
+Mustafa Tolga Eren,
+and Omer Ozan Sonmez.
+2017.
+Automatically annotated Turkish corpus for
+named entity recognition and text categorization using
+large-scale gazetteers. Preprint, arXiv:1702.02363.
+Ilnar Salimzyanov, Jonathan N. Washington, and Fran-
+cis M. Tyers. 2013.
+A free/open-source Kazakh–
+Tatar machine translation system. In Proceedings of
+the 14th Machine Translation Summit, pages 175–182,
+Nice, France.
+Ismat Samadov. 2024.
+XLM-RoBERTa Azerbaijani
+NER model.
+HuggingFace.
+Fine-tuned XLM-
+RoBERTa for Azerbaijani NER, 25 entity types,
+F1=0.75.
+Stefan Schweter. 2020. Berturk - bert models for turkish.
+Lütfi Kerem Senel, Benedikt Ebing, Konul Baghirova,
+Hinrich Schuetze, and Goran Glavaš. 2024. Kardeş-
+NLU: Transfer to low-resource languages with the
+help of a high-resource cousin – a benchmark and eval-
+uation for turkic languages. In Proceedings of the 18th
+Conference of the European Chapter of the Associa-
+tion for Computational Linguistics (Volume 1: Long
+Papers), pages 1672–1688, St. Julian’s, Malta. Asso-
+ciation for Computational Linguistics.
+Maksud Sharipov, Ikhtiyor Avezmatov, Elmurod Kuriy-
+ozov, and Saidmukhammadjon Babayev. 2025. Nat-
+ural language processing for Uzbek and Turkmen: A
+systematic review of resources, methods, and bench-
+marks.
+In 2025 IEEE XVII International Scientific
+and Technical Conference on Actual Problems of Elec-
+tronic Instrument Engineering (APEIE), pages 1–6.
+19
+
+Oleh Shliazhko, Alena Fenogenova, Maria Tikhonova,
+Anastasia Kozlova, Vladislav Mikhailov, and Tatiana
+Shavrina. 2024. mGPT: Few-shot learners go multi-
+lingual. Transactions of the Association for Computa-
+tional Linguistics, 12:58–79.
+SIGTURK Organizing Committee. 2026.
+Second
+workshop
+on
+natural
+language
+processing
+for
+Turkic languages.
+https://aclweb.org/
+portal/content/second-workshop-
+natural-language-processing-
+turkic-languages.
+Co-located with EACL
+2026, Rabat, Morocco.
+Milan Straka, Jan Hajic, and Jana Straková. 2016. Ud-
+pipe: Trainable pipeline for processing conll-u files
+performing tokenization, morphological analysis, pos
+tagging and parsing. In Proceedings of the Tenth In-
+ternational Conference on Language Resources and
+Evaluation (LREC’16), pages 4290–4297, Portorož,
+Slovenia. European Language Resources Association
+(ELRA).
+D. Sulevmanov, A. Gatiatullin, N. Prokopyev, and N. Ab-
+durakhmonova. 2020. Turkic morpheme web portal
+as a platform for turkology research. In 2020 Inter-
+national Conference on Information Science and Com-
+munications Technologies (ICISCT), pages 1–5.
+Umut Sulubacak, Memduh Gokirmak, Francis Tyers,
+Çağrı Çöltekin, Joakim Nivre, and Gülşen Eryiğit.
+2016. Universal Dependencies for Turkish. In Pro-
+ceedings of COLING 2016, the 26th International Con-
+ference on Computational Linguistics: Technical Pa-
+pers, pages 3444–3454, Osaka, Japan. The COLING
+2016 Organizing Committee.
+John Sylak-Glassman. 2016. The composition and use
+of the universal morphological feature schema (Uni-
+Morph schema).
+Technical report, Johns Hopkins
+University.
+Mirzakhmet Syzdykov and et al. 2021.
+Turkic In-
+terlingua (TIL): Multilingual corpora and baselines
+for Turkic languages.
+https://github.com/
+turkic-interlingua.
+Chihiro Taguchi, Sei Iwata, and Taro Watanabe. 2022.
+Universal Dependencies treebank for Tatar: Incorpo-
+rating intra-word code-switching information. In Pro-
+ceedings of the Workshop on Resources and Technolo-
+gies for Indigenous, Endangered and Lesser-resourced
+Languages in Eurasia within the 13th Language Re-
+sources and Evaluation Conference, pages 95–104,
+Marseille, France. European Language Resources As-
+sociation.
+The Cramer Project. 2024. AkylAI: ASR and TTS mod-
+els for Kyrgyz. HuggingFace. Includes AkylAI-STT-
+small (Whisper-based ASR) and AkylAI-TTS-mini
+(Matcha-TTS, 13h/7K samples).
+Cagri Toraman, Ahmet Kaan Sever, Ayşe Aysu Cen-
+giz, Elif Ecem Arslan, Görkem Sevinç, Sarp Kantar,
+Mete Mert Birdal, Yusuf Faruk Güldemir, Ali Buğra
+Kanburoğlu, Sezen Felekoğlu, Birsen Şahin Kütük,
+Büşra Tufan, Elif Genç, Serkan Coşkun, Gupse Ekin
+Demir, Muhammed Emin Arayıcı, Olgun Dursun,
+Onur Gungor, Susan Üsküdarlı, and 2 others. 2026.
+TurkBench:
+A benchmark for evaluating Turkish
+large language models.
+In Proceedings of the Sec-
+ond Workshop Natural Language Processing for Tur-
+kic Languages (SIGTURK 2026), pages 126–154, Ra-
+bat, Morocco. Association for Computational Linguis-
+tics.
+Trendyol Tech. 2024. Trendyol-LLM: An open-source
+Turkish generative language model.
+HuggingFace
+Model Hub.
+Ualsher Tukeyev, Assem Shormakova, Aidana Karib-
+ayeva, Diana Rakhimova, Balzhan Abduali, Dina
+Amirova, Nazym Rakhmanberdi, and Rashid Aliyev.
+2026.
+An integrated approach to adapting open-
+source AI models for machine translation of low-
+resource Turkic languages. Computers, 15(2):73.
+Gokhan Tur, Dilek Hakkani-Tur, and Kemal Oflazer.
+2003. A statistical information extraction system for
+Turkish.
+Natural Language Engineering, 9(2):181–
+210.
+Timur Turatali, Anton Alekseev, Gulira Jumalieva,
+Gulnara Kabaeva, and Sergey Nikolenko. 2025a.
+Human-annotated ner dataset for the kyrgyz language.
+Preprint, arXiv:2509.19109.
+Timur Turatali, Aida Turdubaeva, Islam Zhenishbekov,
+Zhoomart Suranbaev, Anton Alekseev, and Rustem
+Izmailov. 2025b. Bridging the gap in less-resourced
+languages:
+Building a benchmark for Kyrgyz lan-
+guage models. In 2025 10th International Conference
+on Computer Science and Engineering (UBMK), pages
+1673–1677.
+Utku Türk, Furkan Atmaca, Şaziye Betül Özateş, Ab-
+dullatif Köksal, Balkiz Ozturk Basaran, Tunga Gun-
+gor, and Arzucan Özgür. 2019. Turkish treebanking:
+Unifying and constructing efforts. In Proceedings of
+the 13th Linguistic Annotation Workshop, pages 166–
+177, Florence, Italy. Association for Computational
+Linguistics.
+Meliksah Turker, Erdi Ari, and Aydin Han. 2024.
+Kumru: An open Turkish large language model. Hug-
+gingFace Model Hub.
+Meliksah Turker, Erdi Ari, and 1 others. 2023. VNLP:
+Open-source state-of-the-art NLP tools for Turkish.
+GitHub Repository.
+Turkish NLP Community. 2023.
+Turkish NLP re-
+sources. https://turkishnlp.github.io/
+list/. Curated community-maintained list of Turk-
+ish NLP tools, corpora, treebanks, and models.
+Osman Tursun. 2026.
+Uyghur Multi-Script Con-
+verter.
+https://github.com/neouyghur/
+Uyghur-Multi-Script-Converter.
+GitHub repository.
+20
+
+Francis M. Tyers, Azhunama Bayir-ool, and Jonathan N.
+Washington. 2016. A finite-state morphological anal-
+yser for Tuvan. In Proceedings of the Tenth Interna-
+tional Conference on Language Resources and Evalu-
+ation (LREC’16), Portorož, Slovenia. European Lan-
+guage Resources Association (ELRA).
+Francis M. Tyers, Memduh Gökırmak, and Jonathan N.
+Washington. 2019.
+A free/open-source finite-state
+morphological transducer for Crimean Tatar. Com-
+putEL, 1.
+Francis M. Tyers and Jonathan N. Washington. 2015.
+Towards a free/open-source Universal-Dependency
+treebank for Kazakh. In Proceedings of the 3rd Inter-
+national Conference on Turkic Languages Processing
+(TurkLang 2015), pages 276–289.
+Francis M. Tyers, Jonathan N. Washington, Ilnar Sal-
+imzyanov, and Rustam Khakimzyanov. 2012. A pro-
+totype Tatar–Bashkort machine translation system. In
+Proceedings of the Workshop on Language Resources
+and Technologies for Turkic Languages, pages 16–21.
+Gökçe Uludoğan, Zeynep Balal, Furkan Akkurt, Melik-
+sah Turker, Onur Gungor, and Susan Üsküdarlı. 2024.
+TURNA: A Turkish encoder-decoder language model
+for enhanced understanding and generation. In Find-
+ings of the Association for Computational Linguistics:
+ACL 2024, pages 10103–10117, Bangkok, Thailand.
+Association for Computational Linguistics.
+Yana Veitsman and Mareike Hartmann. 2025. Recent
+advancements and challenges of Turkic Central Asian
+language processing.
+In Proceedings of the First
+Workshop on Language Models for Low-Resource Lan-
+guages, pages 309–324, Abu Dhabi, United Arab Emi-
+rates. Association for Computational Linguistics.
+Jonathan N. Washington, Azhunama Bayir-ool, Shon-
+chalai Salchak, and Francis M. Tyers. 2016.
+A
+finite-state morphological transducer for Tuvan and
+its application to dependency parsing. Rodnoy Yazyk,
+1(4):78–107.
+Jonathan N. Washington, Memduh Gökırmak, and Fran-
+cis M. Tyers. 2020a. A multi-script FST-based ana-
+lyzer for several Turkic languages. Proceedings of the
+Society for Computation in Linguistics, 3(1):483–486.
+Jonathan N. Washington, Iisabaev Mirlan, and Fran-
+cis M. Tyers. 2012. A finite-state morphological anal-
+yser for Kyrgyz. In Proceedings of the Eighth Interna-
+tional Conference on Language Resources and Evalua-
+tion (LREC’12), Istanbul, Turkey. European Language
+Resources Association (ELRA).
+Jonathan N. Washington, Francis M. Tyers, and Mem-
+duh Gökırmak. 2014.
+A finite-state morphological
+analyser for Kazakh. In Proceedings of the Ninth Inter-
+national Conference on Language Resources and Eval-
+uation (LREC’14), Reykjavik, Iceland. European Lan-
+guage Resources Association (ELRA).
+Jonathan North Washington, Francis M. Tyers, and
+Oğuzhan Kuyrukçu. 2020b. Multi-script morpholog-
+ical transducers and transcribers for seven Turkic lan-
+guages.
+In Proceedings of the 12th Language Re-
+sources and Evaluation Conference, pages 4045–4053,
+Marseille, France. European Language Resources As-
+sociation.
+Rustem Yeshpanov, Pavel Efimov, Leonid Boytsov,
+Ardak Shalkarbayuli, and Pavel Braslavski. 2024a.
+KazQAD: Kazakh open-domain question answering
+dataset.
+In Proceedings of the 2024 Joint Inter-
+national Conference on Computational Linguistics,
+Language Resources and Evaluation (LREC-COLING
+2024), pages 9645–9656, Torino, Italia. ELRA and
+ICCL.
+Rustem
+Yeshpanov,
+Yerbolat
+Khassanov,
+and
+Huseyin Atakan Varol. 2022.
+KazNERD: Kazakh
+Named Entity Recognition Dataset. In Proceedings
+of the Thirteenth Language Resources and Evaluation
+Conference,
+pages
+417–426,
+Marseille,
+France.
+European Language Resources Association.
+Rustem Yeshpanov, Saida Mussakhojayeva, and Yer-
+bolat Khassanov. 2023. Multilingual text-to-speech
+synthesis for Turkic languages using transliteration.
+In Proceedings of INTERSPEECH 2023, pages 5521–
+5525.
+Rustem
+Yeshpanov,
+Saida
+Mussakhojayeva,
+Huseyin
+Atakan
+Varol,
+and
+1
+others.
+2024b.
+KAZ-LLM: Large language models for Kazakh.
+HuggingFace Model Hub.
+Rustem
+Yeshpanov,
+Alina
+Polonskaya,
+and
+Huseyin Atakan Varol. 2024c.
+KazParC: Kazakh
+parallel corpus for machine translation. In Proceed-
+ings of the 2024 Joint International Conference on
+Computational Linguistics, Language Resources and
+Evaluation (LREC-COLING 2024), pages 9633–9644,
+Torino, Italia. ELRA and ICCL.
+Tatu Ylonen. 2022.
+Wiktextract:
+Wiktionary as
+machine-readable structured data.
+In Proceedings
+of the Thirteenth Language Resources and Evaluation
+Conference, pages 1317–1325, Marseille, France. Eu-
+ropean Language Resources Association.
+Arda Yüksel, Abdullatif Köksal, Lütfi Kerem Şenel,
+Anna Korhonen, and Hinrich Schütze. 2024. Turk-
+ishMMLU: Measuring massive multitask language un-
+derstanding in Turkish. In Findings of the Association
+for Computational Linguistics: EMNLP 2024, Miami,
+Florida, USA. Association for Computational Linguis-
+tics.
+Aizihaierjiang Yusufu, Liu Jiang, Abidan Ainiwaer, and
+Donghong Ji. 2023.
+UZNER: A benchmark for
+named entity recognition in Uzbek. In Natural Lan-
+guage Processing and Chinese Computing (NLPCC
+2023), volume 14302 of Lecture Notes in Computer
+Science. Springer, Cham.
+21
+
+Table 7: Comprehensive overview of NLP resources for 24 Turkic languages. Each cell lists available tools/datasets as references; — indicates no known public resource. Branches:
+Oghuz, Kipchak, Karluk, Siberian, Oghur, Arghu, Historical. Apertium quality tiers: Prod. = Production, Stb. = Stable, Beta, Proto. = Prototype.
+Language
+Datasets — Training
+Datasets — Benchmarks
+NLP Components
+Toolkits
+UD
+Tree-banks
+NER Corpus
+Parallel/ MT
+Corpus
+Speech Corpus
+NLU Bench.
+QA
+Morphology
+POS + Dep.
+NER System
+ASR
+TTS
+MT
+Toolkit
+Oghuz Branch
+Turkish (tur)
+(Sulubacak
+et al., 2016);
+(Türk et al.,
+2019);
+(Eryiğit et al.,
+2023)
+MilliyetNER (Tur
+et al., 2003);
+TWNERTC (Sahin
+et al., 2017)
+NLLB (NLLB
+Team et al.,
+2022);
+OPUS (Syzdykov
+and et al., 2021);
+Leipzig
+(Goldhahn et al.,
+2012)
+CommonVoice
+(Ardila et al.,
+2020);
+TSC (ISSAI,
+2024);
+FLEURS
+(Conneau et al.,
+2022)
+Mukayese (Safaya
+et al., 2022);
+TR-MMLU (Bayram
+et al., 2025);
+TurkishMMLU
+(Yüksel et al., 2024);
+Cetvel (Er et al.,
+2026);
+TurkBench
+(Toraman et al.,
+2026);
+TUMLU (Isbarov
+et al., 2025)
+—
+Apertium Prod.
+(Forcada et al.,
+2011);
+Zemberek (Akın
+and Akın, 2007)
+Stanza (Qi et al.,
+2020);
+TurkishDelightNLP
+(Alecakir et al.,
+2022);
+ITU pipeline
+(Eryiğit et al.,
+2023)
+TurkishDelightNLP
+(Alecakir et al.,
+2022);
+Stanza (Qi et al.,
+2020)
+CommonVoice
+(Ardila et al.,
+2020);
+Söyle (Mus-
+sakhojayeva
+et al., 2023b);
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a)
+TurkicTTS
+(Yeshpanov
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022);
+Apertium
+(Forcada et al.,
+2011)
+Zemberek (Akın and
+Akın, 2007);
+TurkishDelightNLP
+(Alecakir et al., 2022);
+ITU NLP (Eryiğit,
+2014);
+TurkNLP Suite
+(Altinok, 2023)
+Azerbaijani (aze)
+(Akhundjanova
+et al., 2025)
+azWikiNER (Ibiyev
+and Novak, 2021);
+AzNER (LocalDoc,
+2024)
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021);
+Leipzig
+(Goldhahn et al.,
+2012)
+Multilingual
+(Mussakhojayeva
+et al., 2023a);
+AzASR
+(LocalDoc,
+2025);
+FLEURS
+(Conneau et al.,
+2022)
+TUMLU (Isbarov
+et al., 2025);
+Kardeş-NLU (Senel
+et al., 2024)
+—
+Apertium Stb.
+(Forcada et al.,
+2011)
+UDPipe (Straka
+et al., 2016)
+XLM-R NER
+(Samadov, 2024)
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a)
+TurkicTTS
+(Yeshpanov
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Turkmen (tuk)
+—
+—
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021);
+Leipzig
+(Goldhahn et al.,
+2012)
+TurkmenSpeech
+(Mamedov, 2024)
+—
+—
+Apertium Beta
+(Forcada et al.,
+2011)
+—
+—
+Söyle (Mus-
+sakhojayeva
+et al., 2023b)
+TurkicTTS
+(Yeshpanov
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Gagauz (gag)
+—
+—
+NLLB (NLLB
+Team et al., 2022)
+—
+—
+—
+Apertium Proto.
+(Forcada et al.,
+2011)
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Iranian Azerbaijani
+(azb)
+—
+—
+NLLB (NLLB
+Team et al., 2022)
+—
+—
+—
+—
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Kipchak Branch
+Continued on next page…
+22
+
+…continued from previous page
+Language
+Datasets — Training
+Datasets — Benchmarks
+NLP Components
+Toolkits
+UD
+Tree-banks
+NER Corpus
+Parallel/ MT
+Corpus
+Speech Corpus
+NLU Bench.
+QA
+Morphology
+POS + Dep.
+NER System
+ASR
+TTS
+MT
+Toolkit
+Kazakh (kaz)
+(Tyers and
+Washington,
+2015)
+KazNERD
+(Yeshpanov et al.,
+2022)
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021);
+Leipzig
+(Goldhahn et al.,
+2012)
+KazakhTTS2
+(Mussakhojayeva
+et al., 2022);
+KSC2
+(Mussakhojayeva
+et al., 2021a);
+Multilingual
+(Mussakhojayeva
+et al., 2023a);
+FLEURS
+(Conneau et al.,
+2022);
+CommonVoice
+(Ardila et al.,
+2020)
+TUMLU (Isbarov
+et al., 2025);
+Kardeş-NLU (Senel
+et al., 2024)
+KazQAD
+(Yeshpanov
+et al., 2024a)
+Apertium Prod.
+(Forcada et al.,
+2011)
+Stanza (Qi et al.,
+2020)
+KazNERD
+(Yeshpanov et al.,
+2022);
+Stanza (Qi et al.,
+2020)
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a)
+KazakhTTS2
+(Mussakho-
+jayeva et al.,
+2022);
+TurkicTTS
+(Yeshpanov
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021);
+Apertium
+(Forcada et al.,
+2011)
+KazNLP (Makazhanov,
+2020; Makhambetov
+et al., 2013)
+Kyrgyz (kir)
+(Akhundjanova
+et al., 2025)
+KyrgyzNER
+(Turatali et al.,
+2025a)
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021);
+Leipzig
+(Goldhahn et al.,
+2012)
+Multilingual
+(Mussakhojayeva
+et al., 2023a);
+CommonVoice
+(Ardila et al.,
+2020);
+FLEURS
+(Conneau et al.,
+2022)
+TUMLU (Isbarov
+et al., 2025);
+Kardeş-NLU (Senel
+et al., 2024);
+(Turatali et al.,
+2025b)
+—
+Apertium Stb.
+(Forcada et al.,
+2011)
+Stanza (Qi et al.,
+2020)
+Stanza (Qi et al.,
+2020)
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a);
+AkylAI-STT
+(The Cramer
+Project, 2024)
+TurkicTTS
+(Yeshpanov
+et al., 2023);
+AkylAI-TTS
+(The Cramer
+Project, 2024)
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021)
+—
+Tatar (tat)
+(Taguchi et al.,
+2022)
+—
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021);
+Leipzig
+(Goldhahn et al.,
+2012)
+TatSC (ISSAI,
+2023);
+TatarTTS (Orel
+et al., 2024);
+CommonVoice
+(Ardila et al.,
+2020);
+Multilingual
+(Mussakhojayeva
+et al., 2023a)
+TUMLU (Isbarov
+et al., 2025)
+—
+Apertium Prod.
+(Forcada et al.,
+2011)
+UDPipe (Straka
+et al., 2016)
+—
+Söyle (Mus-
+sakhojayeva
+et al., 2023b);
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a)
+TurkicTTS
+(Yeshpanov
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022);
+Apertium
+(Forcada et al.,
+2011)
+—
+Bashkir (bak)
+—
+—
+NLLB (NLLB
+Team et al.,
+2022);
+Leipzig
+(Goldhahn et al.,
+2012)
+CommonVoice
+(Ardila et al.,
+2020);
+Multilingual
+(Mussakhojayeva
+et al., 2023a)
+—
+—
+Apertium Beta
+(Forcada et al.,
+2011)
+—
+—
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a)
+TurkicTTS
+(Yeshpanov
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Crimean Tatar (crh)
+—
+—
+NLLB (NLLB
+Team et al.,
+2022);
+Apertium
+(Forcada et al.,
+2011)
+—
+TUMLU (Isbarov
+et al., 2025)
+—
+Apertium Beta
+(Forcada et al.,
+2011)
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022);
+Apertium
+(Forcada et al.,
+2011)
+—
+Continued on next page…
+23
+
+…continued from previous page
+Language
+Datasets — Training
+Datasets — Benchmarks
+NLP Components
+Toolkits
+UD
+Tree-banks
+NER Corpus
+Parallel/ MT
+Corpus
+Speech Corpus
+NLU Bench.
+QA
+Morphology
+POS + Dep.
+NER System
+ASR
+TTS
+MT
+Toolkit
+Karakalpak (kaa)
+—
+—
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021)
+—
+TUMLU (Isbarov
+et al., 2025)
+—
+Apertium Proto.
+(Forcada et al.,
+2011)
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Nogai (nog)
+—
+—
+NLLB (NLLB
+Team et al., 2022)
+—
+—
+—
+Apertium Proto.
+(Forcada et al.,
+2011)
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Kumyk (kum)
+—
+—
+NLLB (NLLB
+Team et al., 2022)
+—
+—
+—
+—
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Karachay-Balkar (krc)
+—
+—
+NLLB (NLLB
+Team et al.,
+2022);
+Leipzig
+(Goldhahn et al.,
+2012)
+—
+—
+—
+—
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Karluk Branch
+Uzbek (uzb)
+(Akhundjanova
+and Talamo,
+2025)
+UZNER (Yusufu
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021);
+Leipzig
+(Goldhahn et al.,
+2012)
+USC
+(Mussakhojayeva
+et al., 2021b);
+Multilingual
+(Mussakhojayeva
+et al., 2023a);
+FLEURS
+(Conneau et al.,
+2022)
+TUMLU (Isbarov
+et al., 2025);
+Kardeş-NLU (Senel
+et al., 2024)
+—
+Apertium Stb.
+(Forcada et al.,
+2011)
+UDPipe (Straka
+et al., 2016)
+—
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a)
+TurkicTTS
+(Yeshpanov
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021)
+—
+Uyghur (uig)
+(Eli et al., 2016)
+—
+NLLB (NLLB
+Team et al.,
+2022);
+TIL (Syzdykov
+and et al., 2021);
+Leipzig
+(Goldhahn et al.,
+2012)
+CommonVoice
+(Ardila et al.,
+2020);
+Multilingual
+(Mussakhojayeva
+et al., 2023a)
+TUMLU (Isbarov
+et al., 2025);
+Kardeş-NLU (Senel
+et al., 2024)
+—
+Apertium Beta
+(Forcada et al.,
+2011)
+Stanza (Qi et al.,
+2020)
+—
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a)
+TurkicTTS
+(Yeshpanov
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Siberian Branch
+Continued on next page…
+24
+
+…continued from previous page
+Language
+Datasets — Training
+Datasets — Benchmarks
+NLP Components
+Toolkits
+UD
+Tree-banks
+NER Corpus
+Parallel/ MT
+Corpus
+Speech Corpus
+NLU Bench.
+QA
+Morphology
+POS + Dep.
+NER System
+ASR
+TTS
+MT
+Toolkit
+Sakha (sah)
+(Merzhevich
+and
+Ferraz Gerardi,
+2022)
+—
+NLLB (NLLB
+Team et al.,
+2022);
+Leipzig
+(Goldhahn et al.,
+2012)
+CommonVoice
+(Ardila et al.,
+2020);
+Multilingual
+(Mussakhojayeva
+et al., 2023a)
+—
+—
+Apertium Beta
+(Forcada et al.,
+2011)
+—
+—
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a)
+TurkicTTS
+(Yeshpanov
+et al., 2023)
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Altai (alt)
+—
+—
+NLLB (NLLB
+Team et al., 2022)
+—
+—
+—
+Apertium Proto.
+(Forcada et al.,
+2011)
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Tuvan (tyv)
+—
+—
+NLLB (NLLB
+Team et al., 2022)
+—
+—
+—
+Apertium Proto.
+(Forcada et al.,
+2011)
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Khakas (kjh)
+—
+—
+NLLB (NLLB
+Team et al., 2022)
+—
+—
+—
+—
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Oghur Branch
+Chuvash (chv)
+—
+—
+NLLB (NLLB
+Team et al.,
+2022);
+Leipzig
+(Goldhahn et al.,
+2012)
+CommonVoice
+(Ardila et al.,
+2020)
+—
+—
+Apertium Proto.
+(Forcada et al.,
+2011)
+—
+—
+TurkicASR
+(Mussakho-
+jayeva et al.,
+2023a)
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Arghu Branch
+Khalaj (klj)
+—
+—
+NLLB (NLLB
+Team et al., 2022)
+—
+—
+—
+—
+—
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Historical Languages
+Ottoman Turkish (ota)
+(Özateş et al.,
+2024)
+—
+NLLB (NLLB
+Team et al., 2022)
+—
+—
+—
+Apertium Proto.
+(Forcada et al.,
+2011)
+Stanza (Qi et al.,
+2020)
+—
+—
+—
+NLLB (NLLB
+Team et al.,
+2022)
+—
+Old Turkish (otk)
+(Derin and
+Harada, 2021)
+—
+—
+—
+—
+—
+—
+—
+—
+—
+—
+—
+—
+25
+
+Table 8: Pretrained neural language models for Turkic languages. Encoder: masked LM (BERT/RoBERTa/ELECTRA-style); Generative: causal/autoregressive LM (GPT/LLaMA-
+style) and encoder-decoder (T5/BART-style); Multilingual: large multilingual models with confirmed Turkic-language pretraining data. — indicates no publicly available model.
+Language
+Encoder-only (MLM)
+Generative / Seq2Seq
+Multilingual models
+BERT / RoBERTa / ELECTRA
+GPT / LLaMA / T5 / BART
+(coverage confirmed)
+Oghuz Branch
+Turkish (tur)
+BERTurk (base/cased/uncased/128k; DistilBERT; ELECTRA;
+ConvBERT) (Schweter, 2020)
+TURNA (1.1B enc-dec) (Uludoğan et al., 2024);
+Kumru-2B (Turker et al., 2024);
+Trendyol-LLM-8B (Trendyol Tech, 2024)
+mBERT (Devlin et al., 2019);
+XLM-R (Conneau et al., 2020);
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Azerbaijani (aze)
+aLLMA (SMALL/BASE/LARGE) (Isbarov et al., 2024)
+Az-Mistral (7B) (Isbarov et al., 2024)
+mBERT (Devlin et al., 2019);
+XLM-R (Conneau et al., 2020);
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Turkmen (tuk)
+—
+—
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Gagauz (gag)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Iranian Azerbaijani (azb)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Kipchak Branch
+Kazakh (kaz)
+Kaz-RoBERTa (Mussakhojayeva et al., 2023a)
+KAZ-LLM 8B/70B (LLaMA 3.1-based) (Yeshpanov et al., 2024b);
+Sherkala-Chat 8B (Koto et al., 2025)
+mBERT (Devlin et al., 2019);
+XLM-R (Conneau et al., 2020);
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Kyrgyz (kir)
+KyrgyzBERT (Metinov, 2023)
+—
+XLM-R (Conneau et al., 2020);
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Tatar (tat)
+—
+—
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Bashkir (bak)
+—
+—
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Continued on next page…
+26
+
+…continued from previous page
+Language
+Encoder-only (MLM)
+Generative / Seq2Seq
+Multilingual models
+BERT / RoBERTa / ELECTRA
+GPT / LLaMA / T5 / BART
+(coverage confirmed)
+Crimean Tatar (crh)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Karakalpak (kaa)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Nogai (nog)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Kumyk (kum)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Karachay-Balkar (krc)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Karluk Branch
+Uzbek (uzb)
+UzBERT (Mansurov and Mansurov, 2021);
+TahrirchiBERT (Mamasaidov et al., 2021);
+BERTbek (Kuriyozov et al., 2024)
+—
+mBERT (Devlin et al., 2019);
+XLM-R (Conneau et al., 2020);
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Uyghur (uig)
+—
+—
+XLM-R (Conneau et al., 2020);
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Siberian Branch
+Sakha (sah)
+—
+—
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Altai (alt)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Tuvan (tyv)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Khakas (kjh)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Oghur Branch
+Chuvash (chv)
+—
+—
+Glot500 (Imani et al., 2023);
+mGPT (Shliazhko et al., 2024);
+NLLB (NLLB Team et al., 2022)
+Continued on next page…
+27
+
+…continued from previous page
+Language
+Encoder-only (MLM)
+Generative / Seq2Seq
+Multilingual models
+BERT / RoBERTa / ELECTRA
+GPT / LLaMA / T5 / BART
+(coverage confirmed)
+Arghu Branch
+Khalaj (klj)
+—
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Historical Languages
+Ottoman Turkish (ota)
+Ottoman BERTurk (Schweter, 2020)
+—
+Glot500 (Imani et al., 2023);
+NLLB (NLLB Team et al., 2022)
+Old Turkish (otk)
+—
+—
+—
+28
+
+A
+Morphological Challenge Sentences
+Tables 9–18 present a parallel set of 20 morpholog-
+ical challenge sentences across English and 20 Tur-
+kic languages. Each sentence exercises a specific
+grammatical phenomenon central to Turkic mor-
+phology. These sentences serve as diagnostic inputs
+for the morphological analysis pipeline described in
+§5.
+29
+
+Genitive-Possessive gen_psor
+eng
+Ali’s book is on the table.
+alt
+Алинин бичиги столдо.
+aze
+Ali’nin kitabı masadadır.
+bak
+Алиҙың китабы өҫтәлдә.
+chv
+Алин кӗнеки сӗтел ҫинче.
+crh
+Ali’niñ kitabı masada.
+gag
+Ali’nin kitabı masada.
+kaa
+Ali’nin’ kitabı stolda.
+kaz
+Әлидің кітабы үстелде.
+kir
+Алинин китеби үстөлдө.
+kjh
+Алиның кітабы столда.
+krc
+Али́ни китабы́ столдады.
+kum
+Алини китабы столда.
+nog
+Алидинъ китабы столда.
+sah
+Али кинигэтэ остуолга.
+tat
+Алиның китабы өстәлдә.
+tuk
+Aliniň kitaby stoluň üstünde.
+tur
+Ali’nin kitabı masada.
+tyv
+Алинин ному столда.
+uigئۈستەلدە. كىتابى ئەلىنىڭ
+uzb
+Alining kitobi stolda.
+Accusative Object acc_object
+eng
+Ali saw the book.
+alt
+Али бичикти кӧрди.
+aze
+Ali kitabı gördü.
+bak
+Али китапты күрҙе.
+chv
+Али кӗнекене курнӑ.
+crh
+Ali kitanı kördi.
+gag
+Ali kitabı gördü.
+kaa
+Ali kitaptı ko’rdi.
+kaz
+Әли кітапты көрді.
+kir
+Али китепти көрдү.
+kjh
+Али кітапты көрді.
+krc
+Али́ китапны́ кёрдю́.
+kum
+Али китапны гёрдю.
+nog
+Али китапты коьрди.
+sah
+Али кинигэни көрдө.
+tat
+Али китапны күрде.
+tuk
+Ali kitaby gördi.
+tur
+Ali kitabı gördü.
+tyv
+Али номну көрген.
+uigكۆردى. كىتابنى ئەلى
+uzb
+Ali kitobni ko’rdi.
+Table 9: Challenge sentences: Genitive-Possessive and Accusative Object.
+Locative locative
+eng
+Ali is waiting at school.
+alt
+Али школдо сакып јат.
+aze
+Ali məktəbdə gözləyir.
+bak
+Али мәктәптә көтә.
+chv
+Али шкулта кӗтет.
+crh
+Ali mektepte bekley.
+gag
+Ali şkolada bekler.
+kaa
+Ali mektepte ku’tip otir.
+kaz
+Әли мектепте күтіп тұр.
+kir
+Али мектепте күтүп жатат.
+kjh
+Али школда күтіп тұр.
+krc
+Али́ шко́лда сакъла́йды.
+kum
+Али школда гёзлеп тура.
+nog
+Али мектепте куьтеди.
+sah
+Али оскуолаҕа кэтэһэр.
+tat
+Али мәктәптә көтә.
+tuk
+Ali mekdepde garaşýar.
+tur
+Ali okulda bekliyor.
+tyv
+Али школада манап олур.
+uigساقلاۋاتىدۇ. مەكتەپتە ئەلى
+uzb
+Ali maktabda kutyapti.
+Ablative ablative
+eng
+Ali left the school.
+alt
+Али школдоҥ чыкты.
+aze
+Ali məktəbdən çıxdı.
+bak
+Али мәктәптән сыҡты.
+chv
+Али шкултан тухнӑ.
+crh
+Ali mektepten çıqtı.
+gag
+Ali şkoladan çıktı.
+kaa
+Ali mektepten shiqti.
+kaz
+Әли мектептен шықты.
+kir
+Али мектептен чыкты.
+kjh
+Али школдан шықты.
+krc
+Али́ шко́лдан чы́кты.
+kum
+Али школдан чыкъды.
+nog
+Али мектептен шыкты.
+sah
+Али оскуолаттан таҕыста.
+tat
+Али мәктәптән чыкты.
+tuk
+Ali mekdepden çykdy.
+tur
+Ali okuldan çıktı.
+tyv
+Али школадаан үнген.
+uigچىقتى. مەكتەپتىن ئەلى
+uzb
+Ali maktabdan chiqdi.
+Table 10: Challenge sentences: Locative and Ablative.
+Dative dative
+eng
+Ali entered the school.
+alt
+Али школго кирди.
+aze
+Ali məktəbə girdi.
+bak
+Али мәктәпкә инде.
+chv
+Али шкула кӗнӗ.
+crh
+Ali mektepke kirdi.
+gag
+Ali şkolaya girdi.
+kaa
+Ali mektepke kirdi.
+kaz
+Әли мектепке кірді.
+kir
+Али мектепке кирди.
+kjh
+Али школға кірді.
+krc
+Али́ шко́лгъа кирди́.
+kum
+Али школгъа гирди.
+nog
+Али мектепке кирди.
+sah
+Али оскуолаҕа киирдэ.
+tat
+Али мәктәпкә керде.
+tuk
+Ali mekdebe girdi.
+tur
+Ali okula girdi.
+tyv
+Али школаже кирген.
+uigكىردى. مەكتەپكە ئەلى
+uzb
+Ali maktabga kirdi.
+Plural Noun plural_noun
+eng
+The children played in the park.
+alt
+Балдар паркта ойнодылар.
+aze
+Uşaqlar parkda oynadılar.
+bak
+Балалар паркта уйнанылар.
+chv
+Ачасем паркра вылянӑ.
+crh
+Balalar parkta oynadılar.
+gag
+Uşaklar parkta oynadılar.
+kaa
+Balalar parkta oynadi.
+kaz
+Балалар саябақта ойнады.
+kir
+Балдар паркта ойношту.
+kjh
+Балалар паркта ойнадылар.
+krc
+Сабийле́ па́ркда ойна́дыла.
+kum
+Яшлар паркта ойнадылар.
+nog
+Балалар паркта ойнадылар.
+sah
+Оҕолор пааркаҕа оонньоотулар.
+tat
+Балалар паркта уйнадылар.
+tuk
+Çagalar parkda oýnadylar.
+tur
+Çocuklar parkta oynadı.
+tyv
+Уруглар паркта ойнааннар.
+uigئوينىدى. باغچىدا بالىلار
+uzb
+Bolalar parkda o’ynashdi.
+Table 11: Challenge sentences: Dative and Plural Noun.
+30
+
+1st Person Possessive psor_1sg
+eng
+My house is big.
+alt
+Мениҥ айылым јаан.
+aze
+Mənim evim böyükdür.
+bak
+Минең өйөм ҙур.
+chv
+Манӑн кил пысӑк.
+crh
+Meniñ evim büyük.
+gag
+Benim evim büük.
+kaa
+Menin’ u’yim u’lken.
+kaz
+Менің үйім үлкен.
+kir
+Менин үйүм чоң.
+kjh
+Менің үйім үлкен.
+krc
+Мени́ юйю́м уллу́ду.
+kum
+Мени уьюм уллу.
+nog
+Меним уьйим уьйкен.
+sah
+Мин дьиэм улахан.
+tat
+Минем өем зур.
+tuk
+Meniň öýüm uly.
+tur
+Benim evim büyük.
+tyv
+Мээң бажыңым улуг.
+uigچوڭ. ئۆيۈم مېنىڭ
+uzb
+Mening uyim katta.
+Past Tense past_tense
+eng
+Ali came yesterday.
+alt
+Али тӱӱне келди.
+aze
+Ali dünən gəldi.
+bak
+Али кисә килде.
+chv
+Али ӗнер килнӗ.
+crh
+Ali tünevin keldi.
+gag
+Ali dün geldi.
+kaa
+Ali keshe keldi.
+kaz
+Әли кеше келді.
+kir
+Али кечээ келди.
+kjh
+Али кеше келді.
+krc
+Али́ тюне́н келди́.
+kum
+Али тюнегюн гелди.
+nog
+Али кеше келди.
+sah
+Али бэҕэһээ кэллэ.
+tat
+Али кичә килде.
+tuk
+Ali düýn geldi.
+tur
+Ali dün geldi.
+tyv
+Али кежээ келген.
+uigكەلدى. تۈنۈگۈن ئەلى
+uzb
+Ali kecha keldi.
+Table 12: Challenge sentences: 1st Person Possessive and Past Tense.
+Present Progressive present_prog
+eng
+Ali is coming now.
+alt
+Али эмди келип јат.
+aze
+Ali indi gəlir.
+bak
+Али хәҙер килә.
+chv
+Али халӗ килет.
+crh
+Ali şimdi kele.
+gag
+Ali şimdi geler.
+kaa
+Ali ha’zir kelip atir.
+kaz
+Әли қазір келе жатыр.
+kir
+Али азыр келе жатат.
+kjh
+Али қазір келе жатыр.
+krc
+Али́ бусагъатда́ келе́ди.
+kum
+Али гьали геле.
+nog
+Али аьзир келеди.
+sah
+Али билигин кэлэр.
+tat
+Али хәзер килә.
+tuk
+Ali häzir gelýär.
+tur
+Ali şimdi geliyor.
+tyv
+Али ам кел чыр.
+uigكېلىۋاتىدۇ. ھازىر ئەلى
+uzb
+Ali hozir kelyapti.
+Future Tense future_tense
+eng
+Ali will come tomorrow.
+alt
+Али эртен келер.
+aze
+Ali sabah gələcək.
+bak
+Али иртәгә киләсәк.
+chv
+Али ыран килӗ.
+crh
+Ali yarın kelecek.
+gag
+Ali yarın gelecek.
+kaa
+Ali erteń keledi.
+kaz
+Әли ертең келеді.
+kir
+Али эртең келет.
+kjh
+Али ертең келеді.
+krc
+Али́ тамбла́ келли́кди.
+kum
+Али танга гележек.
+nog
+Али эртен келеек.
+sah
+Али сарсын кэлиэҕэ.
+tat
+Али иртәгә киләчәк.
+tuk
+Ali ertir geler.
+tur
+Ali yarın gelecek.
+tyv
+Али даарта кээр.
+uigكېلىدۇ. ئەتە ئەلى
+uzb
+Ali ertaga keladi.
+Table 13: Challenge sentences: Present Progressive and Future Tense.
+Negation negation
+eng
+Ali did not go to school.
+alt
+Али школго барган јок.
+aze
+Ali məktəbə getmədi.
+bak
+Али мәктәпкә барманы.
+chv
+Али шкула кайман.
+crh
+Ali mektepke barmadı.
+gag
+Ali şkolaya gitmedi.
+kaa
+Ali mektepke barmadi.
+kaz
+Әли мектепке бармады.
+kir
+Али мектепке барган жок.
+kjh
+Али школға бармады.
+krc
+Али́ шко́лгъа барма́ды.
+kum
+Али школгъа бармады.
+nog
+Али мектепке бармады.
+sah
+Али оскуолаҕа барбата.
+tat
+Али мәктәпкә бармады.
+tuk
+Ali mekdebe gitmedi.
+tur
+Ali okula gitmedi.
+tyv
+Али школаже барбаан.
+uigبارمىدى. مەكتەپكە ئەلى
+uzb
+Ali maktabga bormadi.
+Question question
+eng
+Did Ali go to school?
+alt
+Али школго барды ба?
+aze
+Ali məktəbə getdi mi?
+bak
+Али мәктәпкә барҙымы?
+chv
+Али шкула кайнӑ-и?
+crh
+Ali mektepke bardı mı?
+gag
+Ali şkolaya gitti mi?
+kaa
+Ali mektepke bardı ma?
+kaz
+Әли мектепке барды ма?
+kir
+Али мектепке бардыбы?
+kjh
+Али школға барды ма?
+krc
+Али́ шко́лгъа барды́мы?
+kum
+Али школгъа бардымы?
+nog
+Али мектепке бардыма?
+sah
+Али оскуолаҕа барда дуо?
+tat
+Али мәктәпкә бардымы?
+tuk
+Ali mekdebe gitdimi?
+tur
+Ali okula gitti mi?
+tyv
+Али школаже барды бе?
+uigباردىمۇ؟ مەكتەپكە ئەلى
+uzb
+Ali maktabga bordimi?
+Table 14: Challenge sentences: Negation and Question.
+31
+
+Imperative imperative
+eng
+Ali, open the door!
+alt
+Али, эжикти ач!
+aze
+Ali, qapını aç!
+bak
+Али, ишекте ас!
+chv
+Али, алӑка уҫ!
+crh
+Ali, qapını aç!
+gag
+Ali, kapıyı aç!
+kaa
+Ali, esikti ash!
+kaz
+Әли, есікті аш!
+kir
+Али, эшикти ач!
+kjh
+Али, есікті аш!
+krc
+Али́, эшикни́ ач!
+kum
+Али, эшикни ач!
+nog
+Али, эсикти аш!
+sah
+Али, ааны ас!
+tat
+Али, ишекне ач!
+tuk
+Ali, gapyny aç!
+tur
+Ali, kapıyı aç!
+tyv
+Али, эжикти ажыт!
+uig
+،ئاچ! ئىشىكنى ئەلى
+uzb
+Ali, eshikni och!
+Conditional conditional
+eng
+If Ali came, it would be good.
+alt
+Али келзе, јараар эди.
+aze
+Əgər Ali gəlsəydi, yaxşı olardı.
+bak
+Әгәр Али килһә, яҡшы булыр ине.
+chv
+Енчен Али килсен, аван пулнӑ пулӗччӗ.
+crh
+Eger Ali kelse, yahşı olur edi.
+gag
+Eer Ali gelseydi, ii olaceydı.
+kaa
+Eger Ali kelse, jaqsi bolar edi.
+kaz
+Егер Әли келсе, жақсы болар еді.
+kir
+Эгер Али келсе, жакшы болмок.
+kjh
+Егер Али келсе, жақсы болар еді.
+krc
+Али́ келсе́, иги́ боллу́къ эди.
+kum
+Али гелсе, яхшы болар эди.
+nog
+Эгер Али келсе, ийги болар эди.
+sah
+Али кэлбит буолсай, үчүгэй буолуо этэ.
+tat
+Әгәр Али килсә, яхшы булыр иде.
+tuk
+Eger Ali gelse, gowy bolardy.
+tur
+Ali gelse iyi olurdu.
+tyv
+Али келзе, эки боор ийик.
+uigبولاتتى. ياخشى كەلسە، ئەلى ئەگەر
+uzb
+Agar Ali kelsa, yaxshi bo’lardi.
+Table 15: Challenge sentences: Imperative and Conditional.
+Evidential evidential
+eng
+Ali apparently came.
+alt
+Али келип калган.
+aze
+Deyəsən, Ali gəlib.
+bak
+Күрәһең, Али килгән.
+chv
+Али килнӗ курӑнать.
+crh
+Ali kelgen kibi.
+gag
+Ali gelmiş.
+kaa
+Ali kelgen sıyaqlı.
+kaz
+Әли келіпті.
+kir
+Али келиптир.
+kjh
+Әли келіпті.
+krc
+Али́ келгенди́.
+kum
+Али гелгендир.
+nog
+Али келген.
+sah
+Али кэлбит.
+tat
+Али килгән, ахрысы.
+tuk
+Ali gelipdir.
+tur
+Ali gelmiş.
+tyv
+Али келген-дир.
+uigكېلىپتۇ. ئەلى
+uzb
+Ali kelibdi.
+Passive passive
+eng
+The door was opened.
+alt
+Эжик ачылды.
+aze
+Qapı açıldı.
+bak
+Ишек асылды.
+chv
+Алӑк уҫӑлнӑ.
+crh
+Qapı açıldı.
+gag
+Kapı açıldı.
+kaa
+Esik ashildi.
+kaz
+Есік ашылды.
+kir
+Эшик ачылды.
+kjh
+Есік ашылды.
+krc
+Эшик ачы́лды.
+kum
+Эшик ачылды.
+nog
+Эсик ашылды.
+sah
+Аан аһылынна.
+tat
+Ишек ачылды.
+tuk
+Gapy açyldy.
+tur
+Kapı açıldı.
+tyv
+Эжик ажыттынган.
+uigئېچىلدى. ئىشىك
+uzb
+Eshik ochildi.
+Table 16: Challenge sentences: Evidential and Passive.
+Reciprocal reciprocal
+eng
+They saw each other.
+alt
+Олор бой-бойын кӧрдилӧр.
+aze
+Onlar bir-birini gördülər.
+bak
+Улар бер-береһен күрҙеләр.
+chv
+Вӗсем пӗр-пӗрне курнӑ.
+crh
+Olar bir-birini kördiler.
+gag
+Onnar biri-birini gördülär.
+kaa
+Olar bir-birin ko’rdi.
+kaz
+Олар бір-бірін көрді.
+kir
+Алар бири-бирин көрүштү.
+kjh
+Олар бір-бірін көрді.
+krc
+Ала́ бир-бирлерин кёрдюле́.
+kum
+Олар бир-бирин гёрдюлер.
+nog
+Олар бир-бирин коьрдилер.
+sah
+Кинилэр бэйэ-бэйэлэрин көрүстүлэр.
+tat
+Алар бер-берсен күрделәр.
+tuk
+Olar biri-birini gördüler.
+tur
+Onlar birbirini gördü.
+tyv
+Олар бот-боттарын көргеннер.
+uigبىرىنى ئۇلار-كۆردى. بىر
+uzb
+Ular bir-birlarini ko’rdilar.
+Pronouns pronouns
+eng
+We know you.
+alt
+Бис сени билерис.
+aze
+Biz səni tanıyırıq.
+bak
+Беҙ һине беләбеҙ.
+chv
+Эпир сана пӗлетпӗр.
+crh
+Biz seni tanıyırmız.
+gag
+Biz seni tanıyırız.
+kaa
+Biz seni taniymiz.
+kaz
+Біз сені танимыз.
+kir
+Биз сени тааныйбыз.
+kjh
+Біз сені танимыз.
+krc
+Биз сени́ таныйбыз.
+kum
+Биз сени таныйбыз.
+nog
+Биз сени таниймыз.
+sah
+Биһиги эйигин билэбит.
+tat
+Без сине беләбез.
+tuk
+Biz seni tanaýarys.
+tur
+Biz seni tanıyoruz.
+tyv
+Бис сени таныыр бис.
+uigتونۇيمىز. سېنى بىز
+uzb
+Biz seni taniymiz.
+Table 17: Challenge sentences: Reciprocal and Pronouns.
+32
+
+Numeral numeral
+eng
+Three students came.
+alt
+Ӱч студент келди.
+aze
+Üç tələbə gəldi.
+bak
+Өс студент килде.
+chv
+Виҫӗ студент килнӗ.
+crh
+Üç student keldi.
+gag
+Üç öğrenci geldi.
+kaa
+U’sh student keldi.
+kaz
+Үш студент келді.
+kir
+Үч студент келди.
+kjh
+Үш студент келді.
+krc
+Юч студент келди́.
+kum
+Уьч студент гелди.
+nog
+Уьш студент келди.
+sah
+Үс үөрэнээччи кэллэ.
+tat
+Өч студент килде.
+tuk
+Üç talyp geldi.
+tur
+Üç öğrenci geldi.
+tyv
+Үш сургуул келген.
+uigكەلدى. ئوقۇغۇچى ئۈچ
+uzb
+Uchta talaba keldi.
+Converb converb
+eng
+Ali spoke while laughing.
+alt
+Али кӱлӱп куучындады.
+aze
+Ali gülərək danışdı.
+bak
+Али көлөп һөйләне.
+chv
+Али кулса калаҫнӑ.
+crh
+Ali külerek laf etti.
+gag
+Ali gülerek laf etti.
+kaa
+Ali ku’lip so’yledi.
+kaz
+Әли күліп сөйледі.
+kir
+Али күлүп сүйлөдү.
+kjh
+Али күліп сөйледі.
+krc
+Али́ кюле́ туруп сёлешди́.
+kum
+Али кюлеп сёйледи.
+nog
+Али куьлип соьйледи.
+sah
+Али күлэн саҥарда.
+tat
+Али көлеп сөйләде.
+tuk
+Ali ýylgyryp gürledi.
+tur
+Ali gülerek konuştu.
+tyv
+Али хүлүмзүрүп чугаалаан.
+uigسۆزلىدى. كۈلۈپ ئەلى
+uzb
+Ali kulib gapirdi.
+Table 18: Challenge sentences: Numeral and Converb.
+33

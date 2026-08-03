@@ -1,0 +1,32 @@
+[
+  {
+    "question": "What is the main contribution of transformer models to NLP?",
+    "answer": "[LLM ERROR] HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [Errno 61] Connection refused\"))",
+    "latency_s": 4.864,
+    "coverage": 0.0
+  },
+  {
+    "question": "How does QLoRA reduce memory usage during fine-tuning?",
+    "answer": "[LLM ERROR] HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [Errno 61] Connection refused\"))",
+    "latency_s": 4.067,
+    "coverage": 0.0
+  },
+  {
+    "question": "What are the challenges of NLP for low-resource languages?",
+    "answer": "[LLM ERROR] HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [Errno 61] Connection refused\"))",
+    "latency_s": 4.852,
+    "coverage": 0.0
+  },
+  {
+    "question": "Describe the Bangla NLP tasks covered in the survey.",
+    "answer": "[LLM ERROR] HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [Errno 61] Connection refused\"))",
+    "latency_s": 4.352,
+    "coverage": 0.0
+  },
+  {
+    "question": "How is NLP taught interactively to young students?",
+    "answer": "[LLM ERROR] HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=11434): Failed to establish a new connection: [Errno 61] Connection refused\"))",
+    "latency_s": 4.821,
+    "coverage": 0.0
+  }
+]

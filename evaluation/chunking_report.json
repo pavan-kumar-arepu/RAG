@@ -1,0 +1,20 @@
+{
+  "fixed": {
+    "num_chunks": 312,
+    "avg_chunk_words": 490.6,
+    "std_chunk_words": 54.8,
+    "broken_sentence_pct": 73.4
+  },
+  "sliding_window": {
+    "num_chunks": 2183,
+    "avg_chunk_words": 125.5,
+    "std_chunk_words": 97.9,
+    "broken_sentence_pct": 34.08
+  },
+  "semantic": {
+    "num_chunks": 294,
+    "avg_chunk_words": 469.3,
+    "std_chunk_words": 249.9,
+    "broken_sentence_pct": 31.29
+  }
+}

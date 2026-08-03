@@ -1,0 +1,40 @@
+# ── Core ML / NLP ───────────────────────────────────────────────────────────
+sentence-transformers>=2.7.0        # Embeddings (all-MiniLM-L6-v2)
+faiss-cpu>=1.7.4                    # Dense vector index
+rank-bm25>=0.2.2                    # BM25 sparse retrieval
+nltk>=3.8.1                         # Tokenisation helpers
+scikit-learn>=1.4.0                 # Cosine similarity, metrics
+
+# ── Cross-Encoder Re-ranking ─────────────────────────────────────────────────
+transformers>=4.40.0
+torch>=2.1.0
+
+# ── PDF / Table Extraction (Phase 13 – Tabular RAG) ─────────────────────────
+pdfplumber>=0.11.0
+tabulate>=0.9.0
+
+# ── LLM Inference ───────────────────────────────────────────────────────────
+# Option A – local model via Ollama REST API
+requests>=2.31.0
+
+# Option B – Hugging Face Hub (Llama / Gemma / Mistral)
+huggingface-hub>=0.23.0
+accelerate>=0.30.0
+# bitsandbytes is optional (CUDA/Linux only) – not required for Ollama
+# bitsandbytes>=0.41.0             # 4-bit / 8-bit quant for local LLM (Linux+CUDA)
+
+# ── Evaluation ───────────────────────────────────────────────────────────────
+rouge-score>=0.1.2
+nltk>=3.8.1                         # BLEU via nltk.translate
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+numpy>=1.26.0
+pandas>=2.2.0
+tqdm>=4.66.0
+python-dotenv>=1.0.0
+
+# ── Notebook ─────────────────────────────────────────────────────────────────
+jupyter>=1.0.0
+ipywidgets>=8.1.0
+matplotlib>=3.8.0
+seaborn>=0.13.0

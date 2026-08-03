@@ -1,0 +1,4180 @@
+A Review of Bangla Natural Language Processing Tasks and
+the Utility of Transformer Models
+FIROJ ALAM, Qatar Computing Research Institute, HBKU, Qatar
+MD. ARID HASAN, Cognitive Insight Limited, Bangladesh
+TANVIRUL ALAM, BJIT Limited, Bangladesh
+AKIB KHAN, BJIT Limited, Bangladesh
+JANNATUL TAJRIN, Cognitive Insight Limited, Bangladesh
+NAIRA KHAN, Dhaka University
+SHAMMUR ABSAR CHOWDHURY, Qatar Computing Research Institute, HBKU, Qatar
+Bangla – ranked as the 6𝑡ℎmost widely spoken language across the world,1 with 230 million native speakers –
+is still considered as a low-resource language in the natural language processing (NLP) community. With three
+decades of research, Bangla NLP (BNLP) is still lagging behind mainly due to the scarcity of resources and the
+challenges that come with it. There is sparse work in different areas of BNLP; however, a thorough survey
+reporting previous work and recent advances is yet to be done. In this study, we first provide a review of
+Bangla NLP tasks, resources, and tools available to the research community; we benchmark datasets collected
+from various platforms for nine NLP tasks using current state-of-the-art algorithms (i.e., transformer-based
+models). We provide comparative results for the studied NLP tasks by comparing monolingual vs. multilingual
+models of varying sizes. We report our results using both individual and consolidated datasets and provide
+data splits for future research. We reviewed a total of 108 papers and conducted 175 sets of experiments. Our
+results show promising performance using transformer-based models while highlighting the trade-off with
+computational costs. We hope that such a comprehensive survey will motivate the community to build on and
+further advance the research on Bangla NLP.
+CCS Concepts: • Computing methodologies →Information extraction; Language resources; Machine
+translation; Natural language processing; Machine learning approaches; Artificial intelligence.
+Additional Key Words and Phrases: Bangla language processing, text classification, sequence tagging, datasets,
+benchmarks, transformer models
+1
+INTRODUCTION
+Bangla is one of the most widely spoken languages in the world [17], with nearly 230 million native
+speakers. The language is morphologically rich with diverse dialects and a long-standing literary
+tradition that developed over the course of thousands of years. Bangla is also the only language that
+has inspired a language movement, which gained international recognition and is now celebrated as
+International Mother Language Day.2 However, Bangla is still considered a low-resource language
+in terms of digitization, primarily due to the scarcity of annotated computer readable datasets and
+the limited support for resource building.
+Research on Bangla Natural Language Processing (BNLP) began in the early 1990s, with an initial
+focus on rule-based lexical and morphological analysis [106, 180, 181]. Later the advancement in
+1https://www.ethnologue.com/guides/ethnologue200
+2The day of the movement – 21𝑠𝑡February is now recognized by UNESCO as International Mother Language Day
+Authors’ addresses: Firoj Alam, fialam@hbku.edu.qa, Qatar Computing Research Institute, HBKU, Doha, Qatar; Md.
+Arid Hasan, Cognitive Insight Limited, Dhaka, Bangladesh, arid.hasan.h@gmail.com; Tanvirul Alam, BJIT Limited,
+Dhaka, Bangladesh, xashru@gmail.com; Akib Khan, BJIT Limited, Dhaka, Bangladesh, akibkhan0147@gmail.com; Jan-
+natul Tajrin, Cognitive Insight Limited, Dhaka, Bangladesh, jannatultajrin33@gmail.com; Naira Khan, Dhaka University,
+Dhaka, nairakhan@du.ac.bd; Shammur Absar Chowdhury, Qatar Computing Research Institute, HBKU, Doha, Qatar,
+shchowdhury@hbku.edu.qa.
+arXiv:2107.03844v3  [cs.CL]  25 Jul 2021
+
+BNLP research continued in the 2000s, with a particular focus on Parts of Speech (POS) tagging [86],
+grammar checkers [13], Named Entity Recognition (NER) [6, 73], morphological analysis [61, 62],
+parsing using context free grammars[146], Machine Translation (MT) [182], Text-to-Speech (TTS)
+[7, 11], Speech Recognition [46, 95, 162], and Optical Character Recognition (OCR) [39, 96, 97]. Over
+the years, the research focus has extended to include automated text summarization, sentiment
+analysis [87], emotion detection [59], and news categorization [110].
+Feature engineering has been ubiquitous in earlier days. For text classifications, the features
+such as token, bag-of-words, and bag-of-n-grams are used to feature representation. In sequence
+tagging, hand-crafted features include mainly orthographic features such as prefix, suffix, the word
+in context, abbreviation, and numbers. Task-specific knowledge source such as the lexicon has also
+been used, which lists whether a word is a noun, pronoun or belongs to some others classes [6].
+From the modeling perspective, most of the earlier endeavors are either rule-based, statistical or
+classical machine learning based approaches. Classical machine algorithms include Naive Bayes
+(NB), Support Vector Machine (SVM) [122, 196], and Random Forests (RF) [30] are used for the text
+classification task. As for the sequence tagging tasks, such as NER and G2P, the algorithms include
+Hidden Markov Models (HMMs) [29], Conditional Random Fields (CRFs) [127], Maximum Entropy
+(ME) [168], Maximum Entropy Markov Models (MEMMs) [144], and hybrid approach [18].
+It is only very recently that a small number of studies have explored deep learning-based
+approaches [15, 28, 85, 92], which include Long Short Term Memory (LSTM) neural networks [100]
+and Gated Recurrent Unit (GRU) [43] and a combination of LSTM, Convolution Neural Networks
+(CNN) [129] and CRFs [103, 128, 135]. Typically, these algorithms are used with distributed words
+and character representations called “word embeddings" and “character embeddings," respectively.
+For a low-resource language like Bangla, resource development and benchmarks have been major
+challenges. At present, publicly available resources are limited and are focused on certain sets of
+annotation like sentiment [20, 189], news categorization data [126], authorship attribution data
+[118], speech corpora [8, 9], parallel corpora for machine translation [89–91], and pronunciation
+lexicons [7, 49]. A small number of recent endeavors report benchmarking sentiment and text
+classification tasks [15, 92].
+Previous attempts to summarize the contributions in BNLP includes a book (released in 2013) [114]
+highlighting different aspects of Bangla language processing, complied addressing the limitations
+as well as the progress made at the time. The book covered contents including font design, machine
+translation, character recognition, parsing, a few avenues of speech processing, information retrieval,
+and sentiment analysis. Most recently, a survey on Bangla language processing reviews the work
+appeared from 1999 to 2021, where eleven different topics have been addressed in terms of classical
+to deep learning approaches [179].
+In this work, we aim to provide a comprehensive survey on the most notable NLP tasks addressed
+for Bangla, which can help the community with a direction for future research and advance further
+study in the field. Unlike the above mentioned survey works, in this study, we conduct extensive
+experiments using nine different transformer models to create benchmarks for nine different tasks.
+We also conduct extensive reviews on these tasks to compare our results, where possible. There
+has not been any survey on Bangla NLP tasks of this nature; hence this will serve as a first study
+for the research community. Since covering the entire field of Bangla NLP is difficult, we focused
+on the following tasks: (i) POS tagging, (ii) lemmatization, (iii) NER, (iv) punctuation restoration,
+(v) MT, (vi) sentiment classification, (vii) emotion classification, (viii) authorship attribution, and
+(ix) news categorization.
+Our contributions in the current study are as follows:
+(1) We provide a detailed survey on the most notable NLP tasks by reviewing 108 papers.
+2
+
+(2) We benchmark different (nine) tasks with experimental results using nine different trans-
+former models,3 which resulted in 175 sets of experiments.
+(3) We provide comparative results for different transformer models comparing (1) models’ size
+(large vs. small) and (2) style (mono vs. multilingual models).
+(4) We also report comparative results for individual vs. consolidated datasets, when multiple
+data source is available.
+(5) We analyze the trade-off between performance and computational complexity between the
+transformer-based and classical approaches like SVM.
+(6) We provide a concrete future direction for the community answering to questions like: (1)
+what resources are available? (2) the challenges? and (3) what can be done?
+(7) We provide data splits for reproducibility and future research.4
+The rest of the paper is structured as follows: In Section 2, we provide a background study of
+different approaches to BNLP, including the research conducted to date. We then describe the
+pre-trained transformer-based language models Section 3. We proceed to discuss the data and
+experiments in each area of BNLP in Section 4. We also report the experimental results and discuss
+our findings Section 5. The individual overall performance, limitation, and future work are discussed
+in Section 6. Finally, we conclude our study with the future direction of BNLP research in Section
+7.
+2
+BACKGROUND AND RELATED WORK
+As we reviewed the literature, we delved into past work with a focus on particular topics, resulting
+in a literature review that covers the last several decades. Our motivation for such an extensive
+exploration is manifold: (i) As Bangla is a low-resource language and there is a dearth of NLP related
+research, we aimed to search through previous work to see if there are past resources developed in
+the early days that can be pushed forward, (ii) providing the community a heads-start, along with a
+sense of past and present conditions, (iii) providing a future research direction and (iv) benchmarks
+to build on.
+2.1
+Parts of Speech
+Parts-of-Speech (POS) tagging plays a key role in many areas of linguistic research [33, 176]. The
+advent of POS tagging research for Bangla can be traced back to the early 2000s [55], which includes
+the study of rule-based systems [55], statistical models [55, 69, 74, 86], and unsupervised models
+[17]. In Table 1, we provide a brief overview of the relevant studies, with the associated datasets,
+methodologies, and respective results.
+The study of Dandapat et al. [55] reports an HMM-based semi-supervised approach with the use
+of 500 tagged and 50,000 untagged sentences, which achieved an accuracy of 95% on 100 randomly
+selected sentences from the CIIL corpus. In [86], the authors report a comparative study among
+different approaches, which includes Unigram, HMM, and Brill’s approaches on 5,000 Bangla words,
+taken from the Prothom Alo newspaper. The authors noted the following levels of accuracy on
+the two sets: (i) using 12 tags, 45.6% with HMM, 71.2% with Unigram, 71.3% with Brill’s approach,
+(ii) using 41 tags, 46.9% with HMM, 42.2% with Unigram, 54.9% using Brill’s approach. The study
+of Automatic Part-of-Speech tagging was conducted by Dandapat et al. [56]. The authors report
+supervised and semi-supervised HMM and ME-based approaches on EMILLIE/CIIL corpus in the said
+study. The study reports 88.75%, 87.95%, and 88.41% for HMM supervised, HMM semi-supervised,
+3For MT we use one pre-trained transformer model.
+4https://github.com/banglanlp/bnlp-resources Note that we could only provide and share data splits, which were publicly
+accessible. Any private data can be possibly accessed by contacting respective authors.
+3
+
+Table 1. Relevant work in the literature for POS tagging. Reported results are in Accuracy (Acc)
+Paper
+Technique
+Datasets
+Results (Acc)
+Dandapat et al. [55]
+HMM
+500 tagged sentences
+and 50,000 untagged
+words for training, CIIL
+corpus for test
+95.0%
+Hasan et al. [86]
+HMM, Unigram, and
+Brill
+5,000 words from Pro-
+thom Alo
+45.6%, 71.2%, and 71.3%
+using 12 TAGs and
+46.9%, 42.2%, and 54.9%
+using 41 TAGs
+Ekbal et al. [74]
+CRF,
+NER,
+Lexicon,
+UNK word features
+NLPAI_Contest06 and
+SPSAL2007 contest data
+90.3%
+Ekbal et al. [69]
+HMM, ME, CRF, SVM
+NLPAI_Contest06 and
+SPSAL2007 contest data
+HMM: 78.6%, ME: 83.3%,
+CRF: 85.6%, SVM: 86.8%
+Ekbal et al. [70]
+HMM, SVM
+Bengali news corpus
+HMM:
+85.6%,
+SVM:
+91.2%
+Dhandapat et al. [56]
+HMM (Supervised and
+Semi-supervised), ME
+3,625 tagged and 11,000
+untagged
+sentences
+from EMILLE corpus
+HMM-S: 88.7%, HMM-
+SS:
+87.9%,
+and
+ME:
+88.4%
+Ekbal et al. [75]
+ME
+NLPAI_Contest06 and
+SPSAL2007
+88.2%
+Dandapat et al. [54]
+HMM (Supervised and
+Semi-supervised)
+NLPAI and 100,000 un-
+labeled tokens
+HMM-S + CMA: 88.8%,
+HMM-SS + CMA: 89.6%
+Sarker et al. [173]
+HMM
+N/A, NLTK data for test 78.7%
+Mukherjee et al. [147]
+Global Linear Model
+SPSAL2007
+93.1 %
+Ghosh et al. [82]
+CRF
+ICON-2015
+Bengali-English: 75.2%
+Ekbal et al. [77]
+ME, HMM, CRF
+NLPAI_Contest06 and
+SPSAL2007
+ME: 81.9%, SVM: 85.9%,
+CRF: 84.2%
+Kabir et al. [112]
+Deep Learning
+IL-POST project
+93.3%
+Alam et al. [6]
+BiLSTM-CRF
+LDC corpus
+86.0%
+Hoque et al. [102]
+Rule Based
+self developed
+93.7%
+and ME, respectively, using suffix information and a morphological analyzer. In another study [54],
+Dandapat et al. report HMM-based supervised and semi-supervised approaches with the use of a
+morphological analyzer on NLPAI contest data and 100,000 unlabeled tokens. The study reports
+accuracy levels comprising 88.83% and 89.65% for HMM-based supervised and semi-supervised
+approaches, respectively.
+Ekbal et al. had a series of studies for POS taggers [69, 70, 74, 75]. In [74], Ekbal et al. reported
+a method that combines NER, lexicon and unknown word features with CRF. The study used
+NLPAI_Contest06 and SPSAL2007 contest data to evaluate a CRF-based POS tagger and achieved
+an accuracy of 90.30%. In another study [69] Ekbal et al. reports an SVM based approach for POS
+tagging. Additionally, the authors used HMM, ME, and CRF approaches to compare with the
+proposed SVM-based approach. The study reports an accuracy of 86.84% for the proposed model,
+which outperforms existing approaches. In [70], the authors report an HMM and SVM-based Bangla
+POS tagger with the use of NER and lexicon and handling unknown word features on Bangla News
+corpus. The study reports an accuracy of 85.56% and 91.23% using HMM and SVM, respectively.
+In another study [75], Ekbal et al. explore a ME-based Bangla POS tagger on NLPAI_Contest06
+and SPSAL2007 contest data. With ME, the said study utilizes lexical resources, NER inflections,
+and unknown word handling features, which achieved an accuracy of 88.20%. In [77], Ekbal et al.
+proposed a voted approach using NLPAI_contest06 and SPSAL2007 workshop data and achieved
+an accuracy of 92.35%. In the study, they used ME, HMM, and CRF to compare with the proposed
+model.
+4
+
+Table 2. Relevant work in the literature for stemmer and lemmatization. Reported results are in Accuracy
+(Acc). FFNN: Feed-Forward Neural Network. P: Precision. MAP: Mean Average Precision
+Paper
+Technique
+Datasets
+Results (Acc)
+Majumder et al. [139]
+Suffix striping based
+50,000 News documents P 49.6
+Urmi et al. [191]
+N-gram
+Bangla corpus from dif-
+ferent online sources
+40.2 %
+Sarker et al. [175]
+Rule-based
+CLC and CTC
+CLC: 96.4%, CTC: 92.6%,
+and overall: 94.7%
+Dolamic et al. [65]
+4-gram and light stem-
+mer
+News from CRI and
+Anandabazar Patrika5
+light: 41.3% and 4-gram:
+40.7%
+Seddiqui et al. [178]
+Recursive suffix strip-
+ing
+Prothom Alo6 (0.78 mil-
+lion words)
+92.0%
+Paik et al. [156]
+TERRIER
+FIRE-2008
+42.3%
+Ganguly et al. [80]
+Rule-based
+FIRE-2011
+33.0%
+Das et al. [57]
+K-means clustering
+Project IL-ILMT
+74.6%
+Das et al. [60]
+Rule-based
+FIRE-2010
+47.5%
+Sarker et al. [174]
+Rule-based
+3 short stories of Ra-
+bindranath Tagore
+RT1: 98.8%, RT2: 98.7%,
+and RT3: 99.9%
+Islam et al. [107]
+Suffix striping
+N/A, 13,000 words for
+test
+Single error acc: 90.8%,
+multi-error acc: ∼67.0%
+Mahmud et al. [137]
+Rule-based
+Prothom Alo and BD-
+News247 articles
+Verb:
+83.0%,
+Noun:
+88.0%
+Chakrabarty et al. [34] FFNN
+19,159
+training
+and
+2,126 words test
+69.6%
+Loponen et al. [133]
+Stale, Yass and Grale
+FIRE-2010
+MAP 54.4%
+Chakrabarty et al. [36] BiLSTM, BiGRU
+Tagore’s stories and ar-
+ticles Anandabazar Pa-
+trika
+BiLSTM: 91.1% and Bi-
+GRU: 90.8%
+Chakrabarty et al. [35]
+18 articles from FIRE
+Bengali News Corpus
+81.9%
+Pal et al. [157]
+Longest suffix stripping Pashchimbanga Bangla
+Akademi8
+94.0%
+The study of Sarkar et al. [173] reports a POS tagging system using an HMM-based approach and
+achieved an accuracy of 78.68% using trigrams and HMMs. In [147], the authors proposed a Global
+Linear Model on the SPSAL 2007 workshop data and achieved an accuracy of 93.12%. The study
+also executed CRF, SVM, HMM, and ME-based POS taggers to compare with the proposed model.
+The work of Gosh et al. [82] was in a considerably different direction. Their study code-mixed
+social media text using CRF, in which they achieved an accuracy of 75.22% on the Bengali-English
+of the 12th International Conference on Natural Language Processing shared task.
+In [112], the authors report a deep learning-based POS tagger on Microsoft Research India as
+part of the Indian Language Part-of-Speech Tagset project. Using Deep Belief Network for training
+and evaluation, they achieved an accuracy of 93.33%.
+Hoque et al. in [102], report a stemmer and rule-based analyzer for Bangla POS tagging and
+achieved an accuracy of 93.70%. In a recent work, Alam et al. [6] reports Bidirectional LSTMs-CRFs
+networks for Bangla POS tagging on the LDC corpus developed by Microsoft Research India and
+achieved 86% accuracy.
+5
+
+2.2
+Stemming and Lemmatization
+Stemming is the process of removing morphological variants of a word to map it to its root or
+stem [142]. The process of mapping a wordform to a lemma9 is called lemmatization [142].
+2.2.1
+Stemming: Like other BNLP areas of research, the work on Bangla stemming started a little
+over a decade ago [65, 107, 156]. The study of Islam et al. [107] reports a lightweight stemmer for
+a Bangla spellchecker. The authors used as a resource a 600 root word lexicon and a list of 100
+suffixes. The system was tested using 13,000 words and achieved a single error accuracy of 90.8%
+and a multi error accuracy of ∼67%.
+The study of Paik et al. [156] reports a simple stemmer using the TERRIER model for indexing
+and retrieval of information. In the study, the authors report a MAP score of 43.32% on the FIRE
+2008 dataset. A light stemmer and a 4-gram stemmer have been studied by Dolamic et al. [65],
+which reports an accuracy of 41.31% and 40.74%, in the light and the 4-gram stemmer, respectively,
+using news data from September 2004 to September 2007 of CRI and Anandabazar Patrika. In
+addition to the supervised approach, clustering approaches have also been explored for stemming.
+In [57], the authors used K-means clustering on the IL-ILMT dataset and reported an accuracy of
+74.6%.
+Apart from the supervised and semi-supervised approaches, earlier work also includes rule-based
+approaches. Das et al. [60] proposed a rule-based stemmer with the FIRE 2010 dataset, in which
+they report a MAP score of 47.48%. In another study [175], the authors proposed Mulaadhaar – a
+rule-based Bengali stemmer with the FIRE 2012 task. The proposed approach consists of the use of
+two corpora, such as the Classic Literature Corpus (CLC) with 15,347 tokens and the Contemporary
+Travelogue Corpus (CTC) with 11,561 tokens, as well as their combination. The accuracy of their
+systems is 96.4%, 92.6%, and 94.7% on CLC, CTC, and the combined corpus, respectively. In [80],
+the authors report a rule-based stemmer using the FIRE 2011 document collection dataset that
+achieved an accuracy of 33% for Bangla, which is the second-best result in the MET-2012 task.
+Another rule-based approach proposed by Mahmud et al. [137], used data from Prothom Alo10
+and BDNews2411 newspapers, and achieved an accuracy of 88% for verbs and accuracy of 83% for
+nouns. In [178], the authors propose a recursive suffix stripping approach for stemming Bangla
+words. In the study, the authors collected 0.78 million words from the Prothom Alo newspaper and
+achieved an overall accuracy of 92% on this dataset. In [191], the authors report a corpus-based
+unsupervised approach using an N-gram language model on Bangla data, which was collected from
+several online sources. The authors used a 6-gram model and achieved an accuracy of 40.18%.
+2.2.2
+Lemmatization: Some of the earlier work on lemmatization of Bangla can be found in the
+study of Majumder et al. [139]. It proposed a string distance-based approach for Bangla word-
+stemming on 50,000 news documents and achieved an accuracy of 49.60% (i.e., 39.3% improvement
+over the baseline result). In [133], the authors proposed a lemmatizer with three language normal-
+izers (YASS stemmer, GRALE lemmatizer, and StaLe lemmatizer) on the FIRE 2010 dataset. The
+study also reports that the query with title-description-narrative provides the best MAP accuracy
+i.e., 54.38%. The study of Pal et al. [157] proposed the longest suffix-stripping based approach using
+a wordlist collected from the Pashchimbanga Bangla Akademi, Kolkata. The authors achieved a
+94% accuracy on the wordlist. In [35], the authors proposed a rule-based Bangla lemmatizer used
+9“A lemma is a set of lexical forms having the same stem, the same major part-of-speech, and the same word-sense. The
+wordform is the full inflected or derived form of the word.” [142]
+10https://www.prothomalo.com/
+11https://bangla.bdnews24.com/
+6
+
+Table 3. Relevant work in the literature for NER. Results are mostly reported in F1 score. For a few work
+other metrics has been used, which are mentioned.
+Paper
+Technique
+Datasets
+Results (F1)
+Ekbal et al. [73]
+SVM
+IJCNLP-08 NER shared
+task
+84.1%
+Ekbal et al. [71]
+Combination
+of
+ME,
+CRF, and SVM
+150K wordforms col-
+lected from newspaper
+85.3%
+Ekbal et al. [72]
+Voted System
+22K wordforms of the
+IJCNLP-08 NER Shared
+Task
+Acc 92.3%
+Ekbal et al.[70]
+NER system with lin-
+guistic features
+Training
+sentences
+44,432 and test sen-
+tences 5,000
+75.4%,
+72.3%,
+71.4%,
+and 70.1% for person,
+location, organization,
+and
+miscellaneous
+names, respectively
+Ekbal et al. [68]
+SVM
+Sixteen-NE tagged cor-
+pus of 150K wordforms
+91.8%
+Ekbal et al. [67]
+SVM
+150K words
+91.8%
+Ekbal et al. [76]
+CRF
+150K words
+90.7%
+Ekbal et al. [66]
+HMM
+150k wordforms
+84.5%
+Banerjee et al. [23]
+Margin Infused Relaxed
+Algorithm
+IJCNLP-08 NERSSEAL
+89.7%
+Hasanuzzaman et al.
+[94]
+Maximum Entropy
+IJCNLP-08 NER Shared
+Task
+Acc 85.2%
+Singh et al. [184]
+N/A(Shared Task)
+IJCNLP-08 NER Shared
+Task
+65.9%
+Chaudhuri et al. [40]
+Combination
+of
+dictionary-based,
+rule-based and n-gram
+based approaches
+20,000 words in train-
+ing set
+89.5%
+Hasan et al. [88]
+Learning-based
+77,942 words
+Acc 72.0%
+Chowdhury et al. [48]
+CRF
+Bangla Content Anno-
+tation Bank
+58.0%
+on 18 random news articles of the FIRE Bengali News Corpus consisting of 3,342 surface words
+(excluding proper nouns). The authors reported accuracy of 81.95%.
+Rule-based approaches have been dominant for Bangla stemmers and lemmatizers. However,
+recently deep learning-based approaches have been explored in a number of studies. Chakrabarty
+et al. [34] proposed a feed-forward neural network approach; trained and evaluated their system
+on a corpus of 19,159 training samples and 2,126 test samples. The reported accuracy of their
+system is 69.57%. In another study [36], the authors report a context-sensitive lemmatizer using
+two successive variant neural networks. The authors used Tagore stories and news articles from
+Anandabazar Patrika to train and evaluate the networks. The authors report on BiLSTM and
+BiGRU networks and achieved maximum accuracies of 91.14% and 90.85% for BiLSTM-BiLSTM and
+BiGRU-BiGRU, respectively, with restricting output classes.
+In Table 2, we provide relevant work and the corresponding techniques used, datasets, and results
+of each study.
+2.3
+Named Entity Recognition
+The work related to Bangla NER is relatively sparse. The current state-of-the-art for Bangla NER
+shows that most of the work has been done by Ekbal et al. [66–68, 70–73, 76] and IJCNLP-08
+NER Shared Task [184]. Studies by Ekbal et al. comprise the NER corpus development, feature
+7
+
+engineering, the use of HMMs, SVMs, ME, CRFs, and a combination of classifiers. The reported F1
+measure varies from 82% to 91% across a corpus with a different number of entity types. The study
+of Chaudhuri et al. [40] used a hybrid approach, which includes a dictionary and rule and n-gram
+based statistical modeling.
+The study in [88] focused on the geographical context of Bangladesh, as they collected and used
+data from one of the Bangladeshi Newspapers, namely Prothom-Alo [94]. In their study, only three
+entity types (i.e., tags) are annotated i.e. person, location and organization. The reported accuracy of
+their study is F1 71.99%. Banerjee et al. proposed the Margin Infused Relaxed Algorithm for NER,
+where they used the IJCNLP-08 NERSSEAL dataset for the experiment [23]. In [105], Ibtehaz et al.
+reported a partial string matching technique for Bangla NER.
+In [48], Chowdhury et al. developed a corpus for NER consisting of seven entity types. The entities
+are annotated in different newspaper articles collected from various Bangladeshi newspapers. The
+study investigates token, POS, gazetteers, contextual features, and conditional random fields (CRFs)
+and utilizes BiLSTM with CRF network. In this study, we used the same corpus and utilized
+transformer models to provide a new benchmark. In Table 3, we provide a list of the recent work
+done on NER tasks for Bangla.
+2.4
+Punctuation Restoration
+Punctuation restoration is the task of adding punctuation symbols to raw text. It is a crucial post-
+processing step for punctuation-free texts that are usually generated using Automatic Speech
+Recognition (ASR) systems. It makes the transcribed texts easier to understand for human readers
+and improves the performance of downstream NLP tasks. State-of-the-art NLP models are usually
+trained using punctuated texts (e.g., texts from newspaper articles, Wikipedia); hence the lack of
+punctuation significantly degrades performance. As an example, for a Named Entity Recognition
+system, there is a performance difference of more than ∼10% when the model is trained with
+newspaper texts and tested with transcriptions as reported in [10].
+Most of the earlier work on punctuation restoration has been done using lexical, acoustic, and
+prosodic features or a combination of these features [41, 83, 130, 186, 195, 198]. Lexical features are
+widely used for the task as the model can be trained with any well-punctuated text that is readily
+available, e.g., newspaper articles, Wikipedia, etc. In terms of machine learning models, Conditional
+Random Fields (CRFs) have been widely used in earlier studies [134, 198]. Lately, the use of deep
+learning models, such as Long Short-Term Memory (LSTM), Convolutional Neural Network (CNN),
+and transformers have also been used [42, 79, 194, 197] for the task of punctuation restoration.
+The only notable work on Bangla punctuation restoration was done in [16]. The authors explored
+different Transformer architectures for punctuation restoration in English and Bangla. For Bangla,
+they used different multi-lingual transformer models, including multi-lingual BERT [64], XLM
+[52], and XLM-RoBERTa [51]. Using XLM-RoBERTa and data augmentation, they obtained a 69.5
+F1-score on the manually transcribed texts and a 64.0 F1-score on the ASR transcribed texts.
+2.5
+Machine Translation
+From the advent of Machine Translation (MT), rule-based systems have been extensively studied,
+with statistical approaches being introduced in the 1980s [31]. Since then, MT has undergone rapid
+advancement, with neural networks resulting in state-of-the-art performance. Initial studies in MT
+for the Bangla-English language pair can be traced to the early 1990s [151]. The study of Naskar
+et al. [152] reports the first Bangla-English MT system using a rule-based model. In [153], the
+authors proposed an MT system by analyzing prepositions for both Bangla and English. In said
+study, the authors claimed that the prepositional word choice depends on the semantic information
+to translate from English to Bangla. In another study [171], the authors proposed an example-based
+8
+
+Table 4. Relevant work in the literature for MT. ∗No mention of dataset and results, ‡ survey paper. Results
+are mostly reported in BLUE scores. For a few work other metrics has been used, which are mentioned.
+Paper
+Technique
+Datasets
+Results (BLUE)
+Naskar et al. [153]∗‡
+Rule based
+N/A
+N/A
+Salam et al. [171]∗
+Example-based
+N/A
+N/A
+Fransisca et al. [78]
+Adapting rule based
+79 and 27 sentences for
+training and test set
+25 correct sentences
+Dasgupta et al. [63]∗
+Rule based
+N/A
+N/A
+Chatterji et al. [38]
+Lexical transfer based
+SMT
+EMILLE-CIIL
+22.7
+Saha et al. [170]
+Example-based
+2000 News Headlines
+N/A
+Adak et al. [1]
+Rule-based
+Most common Bengali
+words
+F1 81.5%
+Antony et al. [19]∗
+N/A
+N/A
+N/A
+Naskar et al. [151]∗
+N/A
+N/A
+N/A
+Islam et al. [109]
+Phrase-based SMT
+EMILLE-CIIL
+Overall 11.7, short sen-
+tences 23.3
+Pal et al. [158]
+Phrase-based SMT
+EILMT System
+15.1
+Ashrafi et al. [21]∗
+CFG
+N/A
+N/A
+Banerjee et al. [24]
+Many-to-One Phrase-
+based SMT
+ILMPC
+14.0
+Haffari et al. [84]
+Active learning based
+SMT
+Hansards and EMILLE
+5.7
+Mumin et al. [149]
+Log-linear
+phrase
+based SMT
+SUPara
+17.4
+Dhandapat et al. [53]
+Vanilla
+phrase-based
+SMT and NMT
+Microsoft dataset
+16.6 & 20.2
+Khan et al. [116]
+Phrase-based SMT
+EMILLE
+11.8
+Mishra et al. [145]
+Phrase-based SMT
+SATA-Anuvadok
+18.2
+Post et al. [165]
+Phrase-based SMT
+SIPC
+12.7
+Liu et al. [132]
+Seq2Seq
+N/A
+10.9
+Hasan et al. [90]
+SMT, BiLSTM
+ILMPC, SIPC, PTB
+14.8 & 15.6
+Hasan et al. [90]
+BiLSTM
+SUPara
+19.8
+Hasan et al. [89]
+BiLSTM, Transformer
+ILMPC, SIPC, PTB
+15.6 & 16.6
+Hasan et al. [89]
+BiLSTM
+SUPara
+20.0
+Mumin et al. [148]
+NMT
+SUPara
+22.7
+Hasan et al. [93]
+Transformer
+2.75M
+data
+consoli-
+dated from different
+corpora and websites
+32.1
+MT system using WordNet for the Bangla-English language pair. A rule-based approach has been
+adapted by Francisca et al. [78] in which they developed a set of predefined rules by examining
+sentence structures. In the study above, the system correctly generated the translation of 25 out of
+27 sentences. Another rule-based approach has been proposed by Dasgupta et al. [63] in which
+rules from source sentences were extracted using a parse tree, with the parse tree then transferred
+to the target sentence rules.
+Statistical approaches have been studied for the Bangla-Hindi language pair by Chatterji et al.
+[38]. In the said study, the authors used the EMILLIE-CILL parallel corpus to train and evaluate
+the lexical transfer-based statistical machine translation (SMT) and achieved a BLEU score of
+22.75. The study of Saha et al. [170] reports an example-based MT system by analyzing semantic
+9
+
+meanings on 2000 news headlines from The Statesman newspaper. In [1], the authors proposed an
+advanced rule-based approach for a Bangla-English MT system. In the said study, sentences were
+analyzed using a POS tagger and then matched with rules, the most common Bangla words and
+their equivalent terms in English were aligned, and the system achieved an F1-Score of 81.5%. In a
+survey paper, Antony [19] reports MT approaches and available resources for Indian languages.
+A phrase-based SMT has been studied by Islam et al. [109], which reports an overall BLEU score
+of 11.7 and 23.3 for short sentences on the Bangla-English language pair using the EMILLIE-CILL
+parallel corpora.
+In [84], the authors proposed an active learning-based SMT system on the Bangla-English
+language pair and reported a BLEU score of ∼5.7 on the Hansards and EMILLIE corpora. In [158],
+the authors report a phrased-based SMT approach to handle multiword expressions on the EILMT
+system and report a BLEU score of 15.12. In another study [21], the authors proposed a CFG based
+approach for assertive sentences to generate rules and translate to the equivalent target rules.
+Following previous work, phrase-based SMT approaches have gained attention. Post et al. in
+[165] report a phrase-based SMT approach on Six Indian Parallel Corpora (SIPC), and with their
+approach, they report a BLEU score of 12.74 on the Bangla-English language pair. Mishra et al. [145]
+report another phrase-based SMT system, called Shata-Anuvadak, and evaluated their system on
+their parallel corpus. Their system achieved a BLEU score of 18.20 for the Bangla-English language
+pair. In [116], the authors report a phrase-based SMT technique on the EMILLIE corpora for Indian
+languages and achieved a BLEU score of 11.8 for the same language pair. For the English–Bangla
+pair, Dandapat and Lewis compared vanilla phrase-based SMT and NMT systems and reported
+BLEU scores of 16.56 and 20.23, respectively. [53]. Many-to-one phrase-based SMT has been studied
+by Banerjee et al. [24], and with their approach, they report a BLEU score of 13.98 on ILMPC corpora.
+In [132], the authors report a sequence to sequence attention mechanism for Bangla-English MT
+and achieved a BLEU score of 10.92. In [149], the authors proposed a log-linear phrase-based SMT
+solution named ’shu-torjoma’ on the SUPara corpus and reported a 17.43 BLEU score.
+In one of the latest studies, Hasan et al. [90] reported both phrase-based SMT and NMT approaches
+on various parallel corpora. In the said study, authors achieved BLEU scores of 14.82 and 15.62 on
+SMT, and NMT approaches, respectively, on the ILMPC test set; and a 19.76 BLEU score using the
+NMT approach with pretrained embedding on the SUPara corpus. In follow-up work, Hasan et al.
+[89] also explore NMT for the Bangla-English pair. Authors achieved BLEU scores of 16.58 using a
+Transformer on the ILMPC test set and a BLEU score of 19.98 using a BiLSTM on the SUPara test
+set. NMT has also been studied by Mumin et al. [148] which reports a BLEU score of 22.68, and
+Hasan et al. [93] which reports a BLEU score of 32.10 using a Transformer on the SUPara test set.
+For a concise overview, we have provided a list of relevant research on machine translation for
+Bangla-English MT in Table 4, which shows that BLEU scores mainly vary within 32.10.
+2.6
+Sentiment Classification
+The current state-of-the-art research for Bangla regarding the sentiment classification task includes
+resource development and addressing the model development challenges. Earlier work includes rule-
+based and classical machine learning approaches. In [59], the authors proposed a computational
+technique of generating an equivalent SentiWordNet (Bangla) from publicly available English
+sentiment lexicons and an English-Bangla bilingual dictionary with very few easily adaptable noise
+reduction techniques. The classical algorithms used in different studies include Bernoulli Naive
+Bayes (BNB), Decision Tree, SVM, Maximum Entropy (ME), and Multinomial Naive Bayes (MNB)
+[25, 44, 166]. In [108], the authors developed a polarity detection system on textual movie reviews
+in Bangla by using two widely used machine learning algorithms: NB and SVM, and providing
+comparative results. In another study, the authors used NB with rules for detecting sentiment in
+10
+
+Table 5. Relevant work in the literature for sentiment classification. VAE: Variational Auto Encoder, *C
+represents number of class labels. Reported results are in Accuracy (Acc). For a few work other metrics has
+been used, which are mentioned. P: Precision.
+Paper
+Technique
+Datasets
+Results (Acc)
+Das et al. [59]
+SentiWordNet
+2,234 sentences
+47.6%
+Das et al. [58]
+SVM
+447 sentences
+P 70.0%
+Chowdhury et al. [45]
+Unigram
+Twitter posts
+93.0%
+Taher et al. [187]
+Linear SVM
+9,500 comments
+91.7%
+Sumit et al. [185]
+Single layer LSTM
+1.89M sentences
+83.9%
+Tripto et al. [189]
+LSTM and CNN
+Youtube comments
+65.97% (3C) and 54.2%
+(5C)
+Vinayakumar [177]
+Naive Bayes
+SAIL
+33.6%
+Kumar et al. [123]
+SVM
+SAIL
+42.2%
+Kumar et al. [124]
+Dynamic model-based
+features with a random
+mapping approach
+SAIL
+95.4%
+Chowdhury et al. [44]
+SVM and LSTM
+Movie Reviews
+88.9%
+(SVM),
+82.4%
+(LSTM)
+Ashik et al. [20]
+LSTM
+Bengali
+News
+com-
+ments
+79.3
+Wahid et al. [193]
+LSTM
+Cricket comments
+95.0%
+Palash et al. [159]
+VAE
+Newspaper comments
+53.2%
+Bengali Facebook statuses [108]. In [45], the authors developed a dataset using semi-supervised
+approaches and designed models using SVM, and Maximum Entropy [45].
+The work related to the use of deep learning algorithms for sentiment analysis include [20, 22, 98,
+115, 189]. In [189], the authors used LSTMs and CNNs with an embedding layer for both sentiment
+and emotion identification from YouTube comments. The study in [20] provides a comparative
+analysis using both classical – SVM, and deep learning algorithms – LSTM and CNN, for sentiment
+classification of Bangla news comments. The study in [115] integrated word embeddings into
+a Multichannel Convolutional-LSTM (MConv-LSTM) network for predicting different types of
+hate speech, document classification, and sentiment analysis for Bangla. Due to the availability of
+romanized Bangla texts in social media, the studies in [22, 98] use LSTM to design and evaluate the
+model for sentiment analysis. In [14], authors used a CNN for sentiment classification of Bangla
+comments. The studies in [167] and [138] analyze user sentiment on Cricket comments from online
+news forums.
+For sentiment analysis, there has been significant work in terms of resource and model develop-
+ment. In Table 5, we report a concrete summary highlighting techniques, datasets, and the reported
+results in different studies.
+2.7
+Emotion Classification
+The work in emotion classification is relatively sparse compared to sentiment classification for
+Bangla content. To this effect, Das et al. [59] developed WordNet affect lists for Bangla, which is
+adapted from English affect word-lists. Tripto et al. [189] used LSTM and CNN with an embedding
+layer for emotion identification from YouTube comments. Their proposed approach shows an
+accuracy of 59.2% for emotion classification.
+11
+
+2.8
+Authorship Attribution
+Authorship attribution is another interesting research problem in which the task is to identify
+original authors from the text. The research work in this area is comparatively low. In [118],
+the authors developed a dataset and experiment with character level embedding for authorship
+attribution. Using the same dataset, Alam et al. [15] fine-tune multi-lingual transformer models for
+the authorship identification task and report an accuracy of 93.8%.
+2.9
+News Categorization
+The News Categorization task is one of the earliest pieces of work in NLP in a number of languages.
+However, compared to other languages, not much has been done for Bangla. One of the earliest
+studies for Bangla news categorization is by Mansur et al. [141], which looked at character-level
+n-gram based approaches. They reported different n-grams results in terms of frequency, normalized
+frequency, and ranked frequency. Their study showed that when n is increased from 1 to 3, the
+performance increases. However, from a value of 3 to 4 or more, the performance decreases.
+The study of Mandal et al. [140] used four supervised learning methods: Decision Tree(DT),
+K-Nearest Neighbour (KNN), Naïve Bayes (NB), and Support Vector Machine (SVM) for the catego-
+rization of Bangla news from various Bangla websites. Their approach includes tokenization, digit
+removal, punctuation removal, stop words removal, and stemming, followed by feature extraction
+using normalized tf-idf weighting and length normalization. They reported precision, recall and
+F-score for every category. They also reported an average (macro) F-score for all of the four machine
+learning algorithms: DT(80.7), KNN(74.2), NB(85.2), and SVM(89.1). In [2], the authors extracted
+tf-idf features and trained the classifier using Random Forest, SVM with linear and radial basis
+kernel, K-Nearest Neighbor, Gaussian Naive Bayes, and Logistic Regression. They have created a
+large Bangla text dataset and made it publicly available. Another study that is similar has been done
+by Alam et al. [188] using a corpus of size ∼3,76,226 of Bangla news articles. The study conducted
+experiments using Logistic Regression, Neural Network, NB, Random Forest, and Adaboost by
+utilizing textual features such as word2vec, tf-idf (3000 word vector), and tf-idf (300 word vector).
+They obtained the best results, an F1 of 0.96, using word2vec representation and neural networks.
+3
+METHODS
+We use different multilingual and monolingual transformer-based language models in our ex-
+periments. For monolingual models, we make use of Bangla language models trained in Indic-
+Transformers [111]. Indic-Transformers consist of language models trained for three Indian lan-
+guages: Hindi, Bangla, and Telugu. The authors introduced four variants of the monolingual
+language model: BERT, DistilBERT, RoBERTa, and XLM-RoBERTa.
+In this section, we briefly describe different language models we have used and task-specific
+modifications that were done for fine-tuning them.
+3.1
+Pretrained Language Models
+3.1.1
+BERT. BERT [64] is designed to learn contextualized word representation from unlabeled
+texts by jointly conditioning on the left and right contexts of a token. It uses the encoder part
+of the transformer architecture introduced in [192]. Two objective functions are used during the
+pretraining step:
+• Masked language model (MLM): Some fraction of the input tokens are randomly masked,
+and the objective is to predict the vocabulary ID of the original token in that position. The
+bidirectional nature ensures that the model can effectively use both past and future contexts
+for this task.
+12
+
+Table 6. Configurations for different Transformer models used in the experiments.
+Model Name
+Model Type
+#Parameters
+(Millions)
+Mono/Multi
+lingual
+Vocab
+size
+Hidden
+Size
+#Hidden
+layers
+#Attention
+heads
+Bangla Electra
+base
+13.4
+mono
+29,898
+256
+12
+4
+Indic-BERT
+base
+134.5
+mono
+100,000
+768
+12
+12
+Indic-DistilBERT
+base
+66.4
+mono
+30,522
+768
+6
+12
+Indic-RoBERTa
+∗∗
+83.5
+mono
+52,000
+768
+6
+12
+Indic-XLM-RoBERTa
+∗∗
+134.5
+mono
+100,002
+768
+8
+12
+BERT-bn
+base
+164.4
+mono
+102,025
+768
+12
+12
+BERT-m
+base
+177.9
+multi
+119,547
+768
+12
+12
+DistilBERT-m
+base
+134.7
+multi
+119,547
+768
+6
+12
+XLM-RoBERTa
+large
+559.9
+multi
+250,002
+1,024
+24
+16
+Transformer15
+base
+253.1
+multi
+256,360(BN), 151,752(EN)
+512
+6
+8
+• Next sentence prediction (NSP): This is a binary classification task where given two sentences,
+the goal is to decide whether the second sentence immediately follows the first sentence in
+the original text. Positive sentences are created by taking consecutive sentences from the
+text, and negative sentences are created by taking sentences from two different documents.
+The multilingual variant of BERT (mBERT) is trained using the Wikipedia corpus of the most
+extensive languages. Data is sampled using an exponentially smoothed weighting to address
+differences among the corpus size of different languages, ensuring that high resource languages like
+English are under-sampled compared to low resource languages. Word counts are weighted similarly
+so that words from low-resource languages are represented adequately in terms of vocabulary.
+Two commonly used variants of BERT models are BERT-base and BERT-large. BERT-base model
+consists of 12 layers, 768 hidden dimensions, and 12- self-attention heads. BERT-large variant has
+24 layers, 1,024 hidden dimensions, and 16 self-attention heads.
+We use three different BERT models in our experiments:
+(1) BERT-m: We use the pretrained multilingual BERT model available in HuggingFace’s trans-
+former library.12 This model is trained using the top 104 languages with the largest Wikipedia
+entries, including Bangla.
+(2) BERT-bn: This is a monolingual Bangla BERT model trained using the same architecture as
+the BERT-base model.13 Bangla common crawl corpus, and Wikipedia dump dataset are used
+to train this language model. It has 102025 vocabulary entries.
+(3) Indic-BERT: This is the monolingual BERT model from Indic-Transformers trained using ∼3
+GB training data.14
+3.1.2
+RoBERTa. RoBERTa [51] improves upon BERT by proposing several novel training strategies,
+including (1) training the model longer with more data (2) using a larger batch size (3) removing
+the next sentence prediction task and only using MLM loss (4) training on longer sequences
+(5) generating the masking pattern dynamically. These modifications allow RoBERTa to outperform
+BERT on different downstream language understanding tasks consistently.
+XLM-RoBERTa [51] is the multilingual counterpart of RoBERTa trained with a multilingual
+MLM. It is trained in one hundred languages using 2.5 terabytes of filtered Common Crawl data.
+Like RoBERTa, it provides substantial gain over the multilingual BERT model, especially on low
+resource languages.
+12https://huggingface.co/bert-base-multilingual-cased
+13https://huggingface.co/sagorsarker/bangla-bert-base
+14https://huggingface.co/neuralspace-reverie/indic-transformers-bn-bert
+15Only used for MT task
+13
+
+We used three different RoBERTa models in our experiments:
+(1) XLM-RoBERTa: We use the XLM-RoBERTa large model from HuggingFace’s transformer
+library.16
+(2) Indic-RoBERTa: This is the monolingual RoBERTa language model trained on ∼6 GB training
+corpus from Indic-Transformers.17
+(3) Indic-XLM-RoBERTa: This XLMRoBERTa model is pre-trained on ∼3 GB of monolingual
+training corpus.18
+3.1.3
+DistilBERT. DistilBERT [172] is trained using knowledge distillation from BERT. This model
+is 40% smaller and 60% faster while retaining 97% of the language understanding capabilities of the
+BERT model. The training objective used is a linear combination of distillation loss, supervised
+MLM loss, and cosine embedding loss.
+We use two variants of the DistilBERT model in our experiments:
+(1) DistilBERT-m: This model is distilled from the multilingual BERT model.19 Similar to BERT-m,
+it is trained on 104 languages from Wikipedia.
+(2) Indic-DistilBERT: This DistilBERT model is trained on ∼6 GB of monolingual training cor-
+pus.20
+3.1.4
+Electra. Electra [50] is trained using a sample-efficient pre-training task called replaced token
+detection. In this approach, instead of masking input tokens, they are replaced with alternatives
+sampled from a generator network. Then a discriminator model is trained to predict whether
+a generator sample replaced each token or not. This approach allows the model to learn better
+representation while being compute-efficient. We use a monolingual Bangla Electra model trained
+on a 5.8 GB web crawl corpus and 414 MB Bangla Wikipedia dump.21
+In Table 6 we present the specific configurations of the models we used in our study. For some
+pre-trained models, authors have not used original architectures as highlighted with ∗∗in Model
+Type column. The table shows that the vocab size for multilingual models is more extensive than
+monolingual models as they contain words from different languages. Among the models, Electra is
+the smallest in terms of vocab size, hidden units, number of layers, and number of attention heads,
+whereas XLM-RoBERTa is the largest.
+3.2
+Task-specific Fine-Tuning
+We take hidden layer embeddings from the pretrained models and add additional layers for the
+specific task at hand. We then fine-tune the entire network using the dataset in an end-to-end
+manner. Even though we experiment with nine different tasks, they can be divided into three broad
+categories from the modeling perspective.
+3.2.1
+Text Classification. We consider sentiment, emotion, authorship attribution, and news catego-
+rization as a text classification problem, where text can be a document, article or social media post.
+For these tasks, we use sentence embeddings (usually the start of sequence token in the transform-
+ers) and use it for classification. We add a linear layer to predict the output class distribution for
+the task. The linear layer is preceded by an additional hidden layer for RoBERTa models.
+16https://huggingface.co/xlm-roberta-large
+17https://huggingface.co/neuralspace-reverie/indic-transformers-bn-roberta
+18https://huggingface.co/neuralspace-reverie/indic-transformers-bn-xlmroberta
+19https://huggingface.co/distilbert-base-multilingual-cased
+20https://huggingface.co/neuralspace-reverie/indic-transformers-bn-distilbert
+21https://huggingface.co/monsoon-nlp/bangla-electra
+14
+
+3.2.2
+Token/Sequence Classification. We consider PoS tagging, lemmatization, NER, and punc-
+tuation restoration as token classification tasks. We use the hidden layer embeddings obtained
+from the transformers as input for a bidirectional LSTM layer. The outputs from the forward
+and backward LSTM layers are concatenated at each time-step and fed to a fully connected layer
+to predict the token distribution, allowing the network to use both past and future contexts for
+prediction effectively.
+3.2.3
+Machine Translation. For the machine translation task, we use a transformer base model to
+train the data and byte pair encoding for handling rare words. Each sentence starts with a special
+start of sentence token and ends with a end of sentence token. For the MT task, these are respectively
+[START] and [END] tokens. Each encoder layer consists of a multi-head attention layer followed
+by a fully connected feed forward layer, in which the decoder layer consists of a masked multi-head
+attention and an encoder attention layer followed by a fully connected feed forward layer.
+3.3
+Evaluation
+We computed the weighted average precision (P), recall (R) and F1-measure (F1) to measure the
+performance of each classifier. We chose a weighted metric, which takes care of the class imbalance
+problem. For the MT task, we computed the Bilingual Evaluation Understudy (BLEU) score [160] to
+evaluate the performance of automatic translations.
+4
+EXPERIMENTS
+4.1
+Parts of Speech
+4.1.1
+Dataset. For the POS task, we used the following three datasets for training and evaluating
+the models. In the sections below, we provide brief details for each dataset.
+(1) LDC Corpus [26, 113]: The LDC corpus is publicly available through LDC. It has been
+developed by Microsoft Research (MSR), India, for linguistic research. It consists of three-
+level annotations i.e. lexical category, type, and morphological attribute. For the current study,
+we only utilized POS tags comprising 30 tags. The entire corpus consists of 7,393 sentences
+corresponding to 102,937 tokens. The text in the corpus was collected from blogs, Wikipedia
+articles, and other sources in order to have variation in the text. More details of the said tag
+set can be found in the annotation guideline included with the corpus, and also found in [26].
+(2) IITKGP POS Tagged Corpus [125]: The IITKGP POS Tagged corpus consists of a tagset
+comprising 38 tags, developed by Microsoft Research in collaboration with IIT Kharagpur
+and several institutions in India [125]. For the current study we mapped this tagset with the
+tagset of LDC corpus to make it consistent. The dataset consists of 5,473 sentences and 72,400
+tokens.
+(3) CRBLP POS Tagged Corpus [190]: The CRBLP POS Tagged corpus consists of ∼20𝐾
+tokens, from 1176 sentences, manually tagged based on the tagset proposed in [99, 136]. The
+articles were collected from BDNews2422, one of the most widely circulated newspapers in
+Bangladesh. For training and evaluation, we also mapped the tagset to align with the other
+two datasets mentioned above.
+In Figure 1, we present the POS tag distribution, in percentage, for the whole LDC corpus. The
+distribution is very low for some tags, for example, CIN (Particles: Interjection) - 59, DWH (Demon-
+stratives: Wh) - 55, LV (Participle: Verbal) - 72, and PRC (Pronoun: Reciprocal) - 15. Such a skewed
+tag distribution also affects the performance of the automatic sequence labeling (tagging) task. In
+Figure 2 and 3 we present the POS tag distribution for the IITKGP, and the CRBLP POS Tagged
+22www.bdnews24.com
+15
+
+Fig. 1. POS tag distribution in LDC corpus.
+Fig. 2. POS tag distribution in IITKGP corpus.
+Corpus, respectively. Across all datasets, the distribution of noun, main verb, and punctuation are
+higher.
+16
+
+Fig. 3. POS tag distribution in CRBLP corpus.
+Table 7. Training, development and test data split for POS tagging task. “Bangla 1" and “Bangla 2" are two
+sets in the original LDC distribution.
+Data set
+# of Sent # of Token (%)
+Set from Original Source
+Train
+4,575
+62,048 (∼60%)
+“Bangla 1" data set +
+(1 to 4) from “Bangla 2" data set
+Dev
+1,455
+20,435 (∼20%) (5 to 10) from “Bangla 2" data set
+Test
+1,368
+20,437 (∼20%) (11 to 17) from “Bangla 2" data set
+4.1.2
+Training. For training, fine-tuning, and evaluating the models, we used the same LDC Corpus
+data splits (i.e., training, development, and test set) reported in [6], also shown in Table 7. In the
+original distribution, the data set appears in two sets “Bangla 1" and “Bangla 2". It has been divided
+by maintaining the file numbers and the associated set where the distribution of the data split is
+60%, 20% and 20% of the tokens, for the training, development, and test set, respectively. There are
+many unknown words in the LDC Corpus data split, i.e., words that are not present in the training
+set. About ∼51% tokens in the development and test sets are of unknown type.
+As additional experiments, we combined (i) LDC training set, (ii) IITKGP POS Tagged Corpus,
+and (iii) CRBLP POS Tagged Corpus as consolidated training sets. We used the LDC development
+set for fine-tuning the models and evaluated it using the LDC test set for all experiments. We
+fine-tuned the pre-trained models as discussed in section 3.
+4.2
+Lemmatization
+4.2.1
+Dataset. We used the corpus reported in [36]. The raw text was collected from a collection of
+Rabindranath Tagore’s short stories and news articles from various domains. The authors annotated
+17
+
+the raw text to prepare a gold lemma dataset.23 In table 8, we present the data split of our experiment,
+in which we used 70%, 15% and 15% sentences for training, development and test set, respectively.
+Table 8. Training, development and test data split for Lemmatization task.
+Data set
+# of Sent
+# of Token
+Train
+1,191 (∼70%)
+14,091
+Dev
+256 (∼15%)
+3,028
+Test
+255 (∼15%)
+3,135
+Total
+1,702
+20,254
+4.2.2
+Training. For training, we used all the transformer models discussed in Section 3. We also
+used the same fine-tuning procedures as other token classification tasks (e.g., POS).
+4.3
+Named Entity Recognition
+4.3.1
+Dataset. We used the corpus reported in [48], referred to as the Bangla Content Annotation
+Bank (B-CAB).24 The text for the corpus has been collected from various popular newspapers in
+Bangladesh (e.g., Prothom-Alo25). It consists of 35 news articles, ≈35𝐾words, 2, 137 sentences
+with a vocabulary size of |𝑉| ≈10𝐾. The topics range from politics, sports, entertainment etc. The
+annotated dataset consists of the following seven entity types:
+• Person (PER): Person entities are only defined for humans. A person entity can be a single
+individual or a group.
+• Location (LOC): Location entities are defined as geographical entities, which include geo-
+graphical areas and landmasses, bodies of water, and geological formations.
+• Organization (ORG): Organization entities are defined by corporations, agencies, and other
+groups of people.
+• Facility (FAC): Facility entities are defined as buildings and other permanent human-made
+structures.
+• Time (TIME): Time entities represent absolute dates and times. It includes duration, days of
+the week, month, year, and time of day.
+• Units (UNITS): Units are mentions that include money, number, rate, and age.
+• Misc (MISC): Misc entities are any entities that do not fit into the above entities.
+In Figure 4, we report examples of each entity type and tag. The annotation has been prepared
+in IOB2 format as shown in Figure 5. We present the distribution of the entity type in IOB2 format
+in Figure 6, which shows that more than 50% of the textual content are non-entity mentions tagged
+as 𝑂, which is a typical scenario for any named entity corpus. Among the entity types, person
+type entities are higher. From the figure, we observe that entity type distribution across datasets is
+representative of the machine learning experiments. In Table 9, we provide token level statistics for
+each entity type. On average, two to three tokens per entity mention for each entity type. We also
+observed that in some cases, the number of tokens went up to ten to fifteen due to the fact that
+the title and the subtitle are associated with person entity mentions. Such entity mentions pose
+various challenges for an automated recognition system.
+23https://www.isical.ac.in/~utpal/resources.php
+24https://github.com/Bangla-Language-Processing/Bangla-Content-Annotation-Bank
+25https://www.prothomalo.com/
+18
+
+Fig. 4. Example of entity type and tags.
+Fig. 5. Example of an annotated sentence.
+Table 9. Statistics with the number of token in entity mentions of each entity type.
+Entity types
+Avg.
+Std.
+FACILITY
+2.5
+1.7
+LOCATION
+1.6
+1.3
+MISC
+2.0
+1.4
+ORGANISATION
+2.5
+1.4
+PERSON
+2.9
+1.9
+TIME
+2.3
+1.3
+UNITS
+2.5
+2.1
+4.3.2
+Training. In order to train the model, we use the same data splits reported in [48]. In Table
+10, we provide the statistics of the tokens and sentences for different splits. The data split consists
+of ∼70%, ∼10%, and ∼20% of the tokens for the training, development, and test set, respectively.
+In Table 11, we present entity type distribution for different splits, which shows overall UNITS
+entity type is under-representative.
+19
+
+Fig. 6. Entity type with IOB2 tag distribution.
+For the experiments, we used the same transformer models discussed in Section 3. For this task,
+we used a maximum sequence length of 256, a batch size of 8, and a learning rate of 1e-5. The
+models were trained using the Adam optimization algorithm for 10 epochs.
+Table 10. Statistics of the annotated NER dataset for the training, development and test data split. The first
+row represents the total number of sentences in each set. Row 2-5 represents the total, the average, the
+standard deviation, and the maximum number of tokens in each set.
+Metric
+Train
+Dev
+Test
+# of sentences
+1,510
+200
+427
+Total
+24,377
+2,636
+6,546
+Average
+16.14
+13.18
+15.33
+Std. deviation
+9.73
+7.83
+13.45
+Max
+98
+53
+85
+Table 11. Training, development and test split for NER (Entity type distribution) task.
+Entity type
+Train
+Dev
+Test
+LOCATION
+738
+177
+177
+PERSON
+1,954
+440
+440
+FACILITY
+190
+71
+71
+MISC
+960
+234
+234
+TIME
+446
+76
+76
+ORGANISATION
+593
+91
+91
+UNITS
+60
+33
+33
+20
+
+Table 12. Punctuation data distributions along with average sentence length (Avg.) and standard deviation
+(Std.). The number in parenthesis represents percentage.
+Dataset
+Total
+Period
+Comma
+Question
+Other (O)
+Avg.
+Std.
+Train
+1,379,986
+98,791 (7.16%)
+65,235 (4.73%)
+4,555 (0.33%)
+1,211,405 (87.78%)
+12.4
+7.6
+Dev
+179,371
+13,161 (7.34%)
+7,544 (4.21%)
+534 (0.3%)
+158,132 (88.16%)
+12.1
+7.2
+Test (news)
+87,721
+6,263 (7.14%)
+4,102 (4.68%)
+305 (0.35%)
+77,051 (87.84%)
+12.4
+7.2
+Test (Ref.)
+6,821
+996 (14.6%)
+279 (4.09%)
+170 (2.49%)
+5,376 (78.82%)
+4.8
+3.2
+Test (ASR)
+6,417
+887 (13.82%)
+253 (3.94%)
+125 (1.95%)
+5,152 (80.29%)
+5.3
+3.6
+4.4
+Punctuation Restoration
+4.4.1
+Dataset. For this task, we used the dataset reported in [16]26 for the punctuation restoration
+task. The dataset consists of train, development, and test splits prepared from a publicly available
+corpus of Bangla newspaper articles [117]. Additionally, the authors prepared two test datasets
+from manual and ASR transcribed texts. These were collected from 65 minutes of speech excerpts
+extracted from four Bangla short stories. There are four labels including three punctuation marks:
+(i) Comma: includes commas, colons and dashes, (ii) Period: includes full stops, exclamation marks
+and semicolons, (iii) Question: only question mark, and (iv) O: for any other token.
+In Table 12, we present the distributions of the labels for the dataset. In parenthesis, we provide
+the percentage of the punctuation. The distribution of Question is low (less than 1%) in the news
+data but much higher in the Bangla manual and ASR transcriptions. The low distribution can be
+attributed to the texts being selected from short stories in which people often engage in conversation
+and ask questions in dialogue. The distribution of Period is also higher in the Bangla manual and
+ASR transcriptions. The higher distribution results in a much smaller average sentence length in
+these datasets, as shown in Table 12.
+4.4.2
+Training. Given that we used the same data splits as reported in [16], in which experiments
+have been conducted using multilingual transformer models, hence, for the punctuation restoration
+task, we only used monolingual models and compared the results. For the experiments, we used a
+maximum sequence length of 256, a batch size of 8, and a learning rate of 1e-5. The models were
+trained using the Adam optimization algorithm for 10 epochs.
+4.5
+Machine Translations: Bangla to English
+4.5.1
+Dataset. We used publicly available datasets reported in [89, 90]. A brief detail of each dataset
+is discussed below.
+(1) Six Indian Parallel Corpora [165] (SIPC): The SIPC consists of the corpora of six lan-
+guages, and the data was collected from the top-100 most-viewed documents from the
+Wikipedia page of each language [165]. The corpora contain ∼20K, 914, 1, 000 parallel sen-
+tences in the training, development and test set, respectively.
+(2) Open Subtitles [131]: The Open Subtitles corpus was developed from the translations of
+movie subtitles. We used the recent version (v2018) of the said corpus, which consists of
+∼413K parallel sentences.
+(3) Indic Languages Multilingual Parallel Corpus (ILMPC): The ILMPC was developed in
+the Workshop in Asian Translation (WAT) 2018 [150], and consists of seven parallel languages.
+The monolingual text of said corpus was collected from OPUS, which has translated for the
+WAT workshop. It consists of movies and subtitles of TV series. The original version of the
+corpus has a total ∼337K, 500 and 1, 000 parallel sentences in the training, development,
+26https://github.com/xashru/punctuation-restoration
+21
+
+and test set, respectively. For the current study, we preprocessed and eliminated code-mixed
+sentences containing English words in Bangla sentences.
+(4) SUPara Corpus [3, 4]: The SUpara corpus has been developed by Shahjalal University of
+Science and Technology (SUST), Bangladesh, in which data was translated from several
+categories of newspaper articles such as literature, journalistic, external communication,
+administrative, etc. The corpus has ∼70.8K parallel sentences for training, 500 sentences for
+each development and test set.
+(5) AmaderCAT [91]: The AmaderCAT dataset has been developed using an open-source
+platform named AmaderCAT. The corpus has a total of 1, 782 parallel sentences.
+(6) Penn Treebank Bangla-English parallel corpus (PTB): The Bangladesh team of the
+PAN Localization Project27 developed the PTB English-Bangla corpus. The dataset has 1, 313
+parallel sentences, in which English sentences were collected from the Penn Treebank corpus.
+(7) Global Voices:28 The Global Voices corpus consists of the translations of spoken languages.
+We used the latest version (2018Q4) of this corpus, in which the amount of parallel segment
+is ∼137K.
+(8) Tatoeba:29 The Tatoeba corpus has been developed using the Tatoeba open-source platform.
+The corpus has ∼5.1k parallel sentences for the Bangla-English language pair.
+(9) Tanzil:30 The Tanzil corpus is derived from the Tanzil Project of Quran translations. This
+dataset consists of ∼187K parallel sentences.
+In Table 13, we present the statistics of the datasets that we used in our study. We used a total
+of 1,162,504 parallel sentences in our training set, which consists of ∼15.4M Bangla and ∼15.1M
+English tokens. The distribution of training, development, and test splits is reported in Table 14.
+Table 13. Statistics of the MT datasets. Bangla (BN), English (EN).
+Corpus Name
+# of Sentences
+# of Tokens
+SUPara
+70,861
+813,184 (BN), 995,255 (EN)
+ILMPC
+324,366
+2,247,958 (BN), 2,675,011 (EN)
+SIPC
+20,788
+263,122 (BN), 323,200 (EN)
+Global Voices
+137,620
+2,567,115 (BN), 2,858,694 (EN)
+Open Subtitles
+413,602
+2,573,874 (BN), 3,011,878 (EN)
+Tatoeba
+5,120
+27,705 (BN), 30,069 (EN)
+Tanzil
+187,052
+6,880,944 (BN), 5,185,136 (EN)
+PTB
+1,313
+31,511 (BN), 32,220 (EN)
+AmaderCAT
+1,782
+13,698 (BN), 19,356 (EN)
+Table 14. Data splits and distribution for the MT dataset. BN-Bangla, EN-English
+Data set
+# of Sent
+# of Token
+Train
+1,162,504
+15,419,111 (BN), 15,127,504 (EN)
+Dev
+500
+8,742 (BN), 10,815 (EN)
+Test
+500
+8,699 (BN), 10,817 (EN)
+27http://www.panl10n.net
+28http://casmacat.eu/corpus/global-voices.html
+29https://tatoeba.org/
+30http://tanzil.net/
+22
+
+4.5.2
+Training. As a part of the training, we first preprocessed the data, which includes removing
+all the parallel sentences containing English words in Bangla sentences, followed by tokenization,
+and binarization. In terms of tokenization, we used the BNLP Toolkit31 to tokenize Bangla sentences
+and the NLTK tokenizer for English sentences. We also used the subword-nmt toolkit [182] to
+segment the text into subword units and applied byte pair encoding to increase the consistency
+of data segmentation for handling rare words. Finally, we applied the fairseq [155] prepossessing
+script to binarize the data for training.
+We used the WMT transformer architecture of the fairseq toolkit [155]32 to train the dataset.
+The training hyper-parameters of the transformer include optimizer Adam, weight decay 0.0001,
+learning rate 5e-4, learning rate scheduler inverse_sqrt, dropout 0.3, and warmup updates 8000. For
+validation, we used a beam search with beam size 5. For the evaluation, we used the SUPara test set
+(version 2018), which consists of 500 parallel sentences.
+4.6
+Sentiment Classification
+4.6.1
+Dataset. Compared to other tasks and datasets, the interest in sentiment analysis research
+has been significantly higher. Over time, several resources have been developed. For the current
+study, we used publicly available datasets reported in [92], individual and consolidated versions. In
+the following, we provide a brief description for each dataset.
+(1) Sentiment Analysis in Indian Languages (SAIL) Dataset [161]: The SAIL dataset has
+been developed in the Shared task on Sentiment Analysis in Indian Languages (SAIL) 2015,
+which consists of posts from Twitter. The training, development, and test set of this dataset
+has 1000, 500, and 500 tweet posts. In our study, we only use the train set and split the train
+set into train, development, and test set.
+(2) ABSA Dataset [167]: The ABSA dataset was developed to perform aspect-based sentiment
+analysis task in Bangla. The dataset contains two categories of data which are cricket and
+restaurant. In the cricket category, authors collected data from Facebook, BBC Bangla, and
+Prothom Alo and manually annotated them, and in the restaurant category, authors directly
+translated the English benchmark’s Restaurant dataset [164].
+(3) YouTube Comments Dataset [189]: The YouTube comments dataset was developed by
+extracting comments from various YouTube videos. The dataset contains three-class and
+five-class sentiment annotation. In our study, we only took the data of three class labels and
+converted the five class into three class labels. As a result, we have a total of 2,796 comments
+which we split into training, development, and test set in order to run individual experiments.
+(4) BengFastText Dataset [169]: The BengFastText dataset was collected from several newspa-
+pers, TV news, books, blogs, and social media. The original dataset reports 320,000 instances;
+however, a fraction of it is publicly available.33 The public version include 8,420 posts in-
+cluding a test set. First, we combined the train and test set, and then we split the data into
+training, development, and test set.
+(5) Social Media Posts (CogniSenti Dataset) [92]: The CogniSenti dataset consist of 942 posts
+from Facebook and 5,628 tweets from Twitter. In order to train our model, we split the data
+into training, development, and test set comprising 4,599, 985, and 986 data, respectively.
+For the classification experiments, we used the same data splits reported in [92], in which the
+training, development, and test sets consist of 70%, 15%, and 15% proportion, respectively. In
+Table 15, we report the distribution of the data splits. We also consolidated them to see if data
+31https://github.com/sagorbrur/bnlp.git
+32https://github.com/pytorch/fairseq
+33https://github.com/rezacsedu/Classification_Benchmarks_Benglai_NLP/
+23
+
+Table 15. Data splits and distributions of Sentiment Classification datasets
+Class label
+Train
+Dev
+Test
+Total
+ABSA: Cricket Dataset
+Positive
+376
+71
+73
+520
+Neutral
+194
+27
+34
+255
+Negative
+1,515
+274
+273
+2,062
+Total
+2,085
+372
+380
+2,837
+ABSA: Restaurant Dataset
+Positive
+872
+143
+116
+1,131
+Neutral
+167
+35
+46
+248
+Negative
+326
+46
+57
+429
+Total
+1,365
+224
+219
+1,808
+BengFastText Dataset
+Positive
+2,403
+595
+788
+3,786
+Negative
+3,107
+783
+744
+4,634
+Total
+5,510
+1,378
+1,532
+8,420
+SAIL
+Positive
+193
+27
+57
+277
+Neutral
+257
+36
+75
+368
+Negative
+247
+35
+72
+354
+Total
+697
+98
+204
+999
+Youtube Comments Dataset
+Positive
+553
+103
+96
+752
+Neutral
+539
+106
+116
+761
+Negative
+865
+210
+208
+1,283
+Total
+1,957
+419
+420
+2,796
+Social Media Posts (CogniSenti Dataset)
+Positive
+1,047
+205
+236
+1,488
+Neutral
+2,633
+553
+563
+3,749
+Negative
+919
+227
+187
+1,333
+Total
+4,599
+985
+986
+6,570
+Combined dataset
+Positive
+5,444
+1,144
+1,366
+7,954
+Neutral
+3,790
+757
+834
+5,381
+Negative
+6,979
+1,575
+1,541
+10,095
+Total
+16,213
+3,476
+3,741
+23,430
+consolidation helps, where all train sets are combined into a single train set. The same procedures
+are applied to combine development and test sets.
+4.6.2
+Training. Social media content is always noisy, consisting of many symbols, emoticons, URLs,
+usernames, and invisible characters. Previous studies show that filtering and cleaning the data
+before training a classifier helps significantly. Hence, we preprocess the data before classification
+experiments. The preprocessing steps included removing stop words, invisible characters, punctu-
+ations, URLs, and hashtag signs. For the experiments, we used different pre-trained transformer
+models discussed in Section 3. We followed a fine-tuning procedure using a task-specific layer on
+top of the transformers network.
+24
+
+Table 16. Data splits and distributions of Emotion Classification dataset.
+Class label
+Train
+Dev
+Test
+Total
+Anger/Disgust
+623
+164
+93
+880
+Joy
+545
+136
+94
+775
+Sadness
+70
+26
+13
+109
+Fear/Surprise
+94
+27
+19
+140
+None
+535
+148
+67
+750
+Total
+1,867
+501
+286
+2,654
+Table 17. Data splits and distributions of News Categorization dataset.
+Class label
+Train
+Dev
+Test
+Total
+Kolkata
+4,596
+596
+569
+5,761
+State
+2,189
+246
+278
+2,713
+National
+1,408
+179
+175
+1,762
+Sports
+1,257
+151
+191
+1,599
+Entertainment
+1,157
+166
+130
+1,453
+International
+515
+71
+66
+652
+Total
+11,122
+1,409
+1,409
+13,940
+4.7
+Emotion Classification
+4.7.1
+Dataset. We used the emotion detection dataset reported in [15, 189], which has been
+collected from YouTube video comments. The videos are manually selected from different domains,
+including music, sports, drama, news, etc. The dataset contains 2890 youtube comments in Bangla,
+English, and romanized Bangla. The annotation of the dataset consists of five emotion labels such
+as (i) anger/disgust, (ii) joy, (iii) sadness, (iv) fear/surprise, and (v) none. For the experiments, we
+use the same data splits reported in [15] Specifically, we set aside 10% of the dataset for testing.
+The rest was further divided into 80% for training and 20% for development. In Table 16, we report
+class label distribution of the emotion dataset.
+4.7.2
+Training. For the experiments, we trained different pre-trained transformer models discussed
+in Section 3. All models were trained for 10 epochs with a learning rate of 1e-5 and a sequence
+length of 30. We use 32 samples in each mini-batch, except when this does not fit in memory (e.g.,
+XLM-RoBERTa). In such cases, we use a maximum batch size that fits within GPU memory. All
+model parameters were fine-tuned during training, i.e., no layer was kept frozen. The model with
+the best development set performance was evaluated on the test dataset.
+4.8
+News Categorization
+4.8.1
+Dataset. This dataset was prepared for the news categorization task in [15, 126]. It contains
+six different class labels and is available with training, development, and test splits with 11284,
+1411, and 1411 news articles, respectively. The class distribution is presented in Table 17, in which
+the dataset has low distribution for International news category.
+4.8.2
+Training. We trained the models using cross-entropy loss criterion, and the Adam optimiza-
+tion algorithm [119]. All models were trained for 10 epochs with a learning rate of 1e-5. We use 32
+samples in each mini-batch, except when this does not fit in memory (e.g., XLM-RoBERTa large
+model). We used a fixed sequence length during training and added padding or truncated length
+when necessary. The sequence length consists of 300 tokens. All model parameters are fine-tuned
+25
+
+Table 18. Data splits and distributions of Authorship Attribution dataset.
+Class label
+Train
+Dev
+Test
+Total
+Humayun Ahmed
+2,898
+714
+906
+4,518
+Shunil Gongopaddhay
+1,230
+340
+393
+1,963
+Shomresh
+911
+215
+282
+1,408
+Shorotchandra
+833
+218
+261
+1,312
+Robindronath
+808
+199
+252
+1,259
+MZI
+715
+165
+220
+1,100
+Shirshendu
+660
+178
+210
+1,048
+Toslima Nasrin
+605
+140
+186
+931
+Shordindu
+567
+144
+177
+888
+Shottojit Roy
+553
+127
+169
+849
+Tarashonkor
+500
+120
+155
+775
+Bongkim
+350
+100
+112
+562
+Nihar Ronjon Gupta
+305
+76
+95
+476
+Manik Bandhopaddhay
+302
+74
+93
+469
+Total
+11,237
+2,810
+3,511
+17,558
+during training, i.e., no layer is kept frozen. The model with the best validation set performance
+was evaluated on the test dataset.
+4.9
+Authorship Attribution
+4.9.1
+Dataset. We used the dataset reported in [15, 118], which contains writings of 14 different
+authors from an online Bangla e-library (e.g., novels, story, series, etc.). Each document in the
+dataset has a fixed length of 750 words. The dataset was balanced so that each author has the same
+number of samples. The data splits consist of 14,047, 3,511, and 750 writings for train, development,
+and test splits, respectively. The class label distribution is reported in Table 18.
+4.9.2
+Training. We balanced the dataset prior to training, taking a minimum number of samples
+(469) per class similar to [118]. We limited the sequence length to 300 on this dataset even though
+each sample in the dataset has 750 words. This was done to meet GPU memory constraints.
+5
+RESULTS
+In this section, we report and discuss the results for each task. We report previous state-of-the-art
+results as baselines for which they are available and compare that with ours. The results that
+improve over the baseline are highlighted in bold form, and the best system is highlighted in bold
+and underlined. For some tasks, an exact comparison was possible as we could use the same data
+splits.
+5.1
+Parts of Speech
+For POS tagging experiments, we used nine pre-trained transformer models and trained the models
+using different combinations of the LDC, IITKGP, and CRBLP corpora. More specifically, we
+combined the IITKGP and CRBLP corpora with the LDC training set to enlarge the training data.
+In Table 19, we present the performance of the models. From the results, we observe that having
+additional data did not help improve the models’ performance. In comparing our results with
+previous state-of-the-art work, we observe that there is only 0.6% absolute improvement, which
+is considerably small. We investigated a previous study [6] and realized that the model had been
+developed using a lexicon combining training, development, and test datasets, which may result in
+an overestimated performance. Hence, the current results are not exactly comparable with previous
+26
+
+Table 19. Results on LDC test set for POS tagging.
+Model
+Train
+Acc
+P
+R
+F1
+Baseline (Token+CRFs) [6]
+LDC
+42.4
+25.7
+29.9
+70.1
+Baseline (BiLSTM-CRFs) [6] LDC
+86.3
+86.3
+86.3
+86.0
+Bangla Electra
+LDC
+79.0
+73.4
+71.1
+72.2
+LDC + IITKGP
+80.2 74.8 72.7
+73.7
+LDC + IITKGP + CRBLP Corpus
+80.4
+75.1 73.0
+74.1
+Indic-BERT
+LDC
+88.3
+84.7
+84.2
+84.5
+LDC + IITKGP
+87.9 84.2 83.9
+84.1
+LDC + IITKGP + CRBLP Corpus
+87.7
+84.0 83.7
+83.9
+Indic-DistilBERT
+LDC
+89.8
+86.7
+86.5
+86.6
+LDC + IITKGP
+89.6 86.3 86.0
+86.2
+LDC + IITKGP + CRBLP Corpus
+89.6
+86.3 86.1
+86.2
+Indic-RoBERTa
+LDC
+87.0
+83.1 82.1
+82.6
+LDC + IITKGP
+86.4 82.5 81.5
+82.0
+LDC + IITKGP + CRBLP Corpus
+86.7
+82.9 82.0
+82.5
+Indic-XLM-RoBERTa
+LDC
+87.7
+83.8 83.4
+83.6
+LDC + IITKGP
+87.7 83.8 83.7
+83.7
+LDC + IITKGP + CRBLP Corpus
+87.4
+83.5 83.2
+83.4
+BERT-bn
+LDC
+85.8
+81.5 80.7
+81.1
+LDC + IITKGP
+85.8 81.5 80.9
+81.2
+LDC + IITKGP + CRBLP Corpus
+85.4
+81.0 80.2
+80.6
+BERT-m
+LDC
+88.1
+84.2
+83.8
+84.0
+LDC + IITKGP
+87.7 83.6 83.5
+83.6
+LDC + IITKGP + CRBLP Corpus
+87.6
+83.6 83.4
+83.5
+DistilBERT-m
+LDC
+83.9
+78.8 78.0
+78.4
+LDC + IITKGP
+83.7 78.5 77.9
+78.2
+LDC + IITKGP + CRBLP Corpus
+83.8
+78.4 78.0
+78.2
+XLM-RoBERTa
+LDC
+90.1
+87.0 86.4
+86.7
+LDC + IITKGP
+89.6
+86.2 86.1
+86.2
+LDC + IITKGP + CRBLP Corpus
+89.5
+86.1 86.0
+86.1
+results. Comparing the models, Indic-DistilBERT and XLM-RoBERTa perform similarly and show
+higher performance compared to other models. In comparing monolingual and multilingual models,
+XLM-RoBERTa shows higher performance, which might be because it is a large version of the
+model, whereas monolingual models are the base version, consisting of fewer parameters than the
+larger version. Among the monolingual models, Electra is the worst performing model.
+5.2
+Lemmatization
+In Table 20, we present the results of the lemmatization task using nine transformer models.
+The baseline results [37] reported using accuracy, hence, we can compare the results using rhe
+accuracy metric. Our best model (i.e., XLM-RoBERTa) achieves 1% absolute improvement in accuracy
+compared to the baseline. For this task, BERT-bn is the second-best model after XLM-RoBERTa in
+terms of accuracy and F1 measures. Indic-DistilBERT did not perform well for this task.
+5.3
+Named Entity Recognition
+In Table 21, we report the results for NER. For this task, we experiment with different types of
+input, i.e., token only and with additional inputs. With token-only experiments, all models show
+a consistent improvement compared to the baseline [48] except the Bangla Electra model. For
+27
+
+Table 20. Results on the test set for Lemmatization.
+Model
+Acc
+P
+R
+F1
+Baseline [37]
+74.1
+-
+-
+-
+Bangla Electra
+7.5 14.1
+6.3
+8.7
+Indic-BERT
+60.9 60.7 60.0
+60.4
+Indic-DistilBERT
+56.1 56.0 55.3
+55.6
+Indic-RoBERTa
+59.2 59.1 58.8
+58.9
+Indic-XLM-RoBERTa
+61.3 61.0 60.0
+60.5
+BERT-bn
+66.1 66.0 65.8
+65.9
+BERT-m
+62.1 62.2 62.0
+62.1
+DistilBERT-m
+60.7 60.7 60.3
+60.5
+XLM-RoBERTa
+75.1
+75.1 74.9 75.0
+Table 21. Results on the test set for NER. GZ: Gazetteers.
+Model
+Acc
+P
+R
+F1
+Token
+Baseline (Token) [48]
+-
+48.0
+34.0
+40.0
+Bangla Electra
+68.6
+27.3 16.7
+20.7
+Indic-BERT
+80.6
+46.9 58.6
+52.1
+Indic-DistilBERT
+81.8
+47.0 59.1
+52.4
+Indic-RoBERTa
+78.3
+39.1 47.8
+43.0
+Indic-XLM-RoBERTa
+80.6
+46.2 60.0
+52.2
+BERT-bn
+82.5
+47.3 56.4
+51.4
+BERT-m
+81.9
+50.2 59.0
+54.3
+DistilBERT-m
+76.4
+38.1 48.1
+42.5
+XLM-RoBERTa
+83.4
+55.2 64.2
+59.4
+Token + POS + GZ
+Baseline (Token + POS) [48]
+-
+65.0
+53.0
+58.0
+Baseline (Token (W2V) + POS + GZ) [48]
+-
+56.0 56.0
+56.0
+Bangla Electra
+76.8
+35.3 38.5
+36.8
+Indic-BERT
+85.6
+57.5 68.4
+62.5
+Indic-DistilBERT
+84.7
+51.8 59.7
+55.4
+Indic-RoBERTa
+84.7
+51.8 59.7
+55.4
+Indic-XLM-RoBERTa
+84.7
+55.8 66.5
+60.7
+BERT-bn
+83.1
+49.4 59.8
+54.1
+BERT-m
+84.8
+57.2 64.0
+60.4
+DistilBERT-m
+81.5
+46.4 54.8
+50.2
+XLM-RoBERTa
+87.0
+63.6 70.5
+66.9
+NER, the literature shows that POS and GZ helps in improving the performance [5, 12]; and so we
+used them in our experiments. Adding them with the transformer models significantly improved
+performance. Note that the results in [48] are reported in a partial and exact match of entities where
+we used exact match for the current study and compare the same with previous results. Similar to
+other tasks, XLM-RoBERTa performs better than other monolingual and multilingual models. For
+token-only experiments, multilingual BERT is the second best model, whereas, for Token + POS +
+GZ, Indic-BERT is the second best model.
+28
+
+Table 22. Result on News, Ref. and ASR test datasets for the Punctuation restoration task. For overall best
+results we use bold and underlined form.
+Test
+Model
+Comma
+Period
+Question
+Overall
+P
+R
+F1
+P
+R
+F1
+P
+R
+F1
+P
+R
+F1
+News
+BERT-m [16]
+79.8
+68.2
+73.5
+80.4
+85.4
+82.8
+72.1
+77.0
+74.5
+79.9
+78.5
+79.2
+DistilBERT-m [16]
+72.1
+60.8
+66.0
+74.5
+71.6
+73.0
+56.9
+67.5
+61.8
+73.0
+67.3
+70.1
+XLM-MLM-100-1280 [16]
+76.9
+71.2
+73.9
+82.0
+83.4
+82.9
+70.2
+76.4
+73.2
+80.0
+78.5
+79.3
+XLM-RoBERTa [16]
+86.0
+77.0
+81.2
+89.4
+92.3
+90.8
+77.4
+85.6
+81.3
+87.8
+86.2
+87.0
+Bangla Electra
+66.9
+30.4
+41.8
+64.2
+64.6
+64.4
+60.0
+1.0
+1.9
+64.8
+49.7
+56.3
+Indic-BERT
+70.4
+63.6
+66.8
+76.3
+75.8
+76.1
+66.7
+53.8
+59.5
+73.9
+70.5
+72.2
+Indic-DistilBERT
+80.0
+69.9
+74.6
+82.1
+85.4
+83.7
+75.0
+67.9
+71.3
+81.2
+79.0
+80.0
+Indic-RoBERTa
+73.5
+59.8
+66.0
+76.7
+74.5
+75.6
+60.8
+61.6
+61.2
+75.1
+68.5
+71.7
+Indic-XLM-RoBERTa
+71.7
+58.9
+64.7
+74.4
+75.0
+74.7
+69.5
+53.8
+60.6
+73.3
+68.2
+70.7
+BERT-m
+71.9
+52.8
+60.9
+72.5
+70.9
+71.7
+58.0
+56.1
+57.0
+71.9
+63.5
+67.4
+Ref.
+BERT-m [16]
+35.6
+34.4
+35.0
+67.4
+64.7
+66.0
+39.8
+28.8
+33.4
+58.5
+54.6
+56.5
+DistilBERT-m [16]
+32.6
+31.5
+32.1
+64.0
+50.2
+56.3
+32.5
+14.7
+20.2
+54.3
+42.4
+47.6
+XLM-MLM-100-1280 [16]
+33.4
+39.8
+36.3
+70.3
+64.0
+67.0
+42.4
+22.9
+29.8
+59.2
+54.5
+56.7
+XLM-RoBERTa [16]
+39.3
+36.9
+38.1
+76.9
+81.4
+79.1
+54.3
+58.8
+56.5
+67.6
+70.2
+68.8
+Bangla Electra
+30.6
+22.6
+26.0
+67.4
+50.4
+57.7
+100.0
+0.6
+1.2
+59.5
+39.2
+47.2
+Indic-BERT
+34.8
+34.1
+34.4
+68.5
+66.0
+67.2
+52.6
+17.6
+26.4
+60.7
+54.1
+57.2
+Indic-DistilBERT
+39.5
+32.3
+35.5
+72.1
+71.9
+72.0
+54.2
+18.8
+27.9
+65.5
+58.0
+61.5
+Indic-RoBERTa
+33.4
+34.8
+34.1
+65.3
+55.2
+59.8
+35.0
+21.2
+26.4
+55.3
+47.3
+51.0
+Indic-XLM-RoBERTa
+36.6
+32.3
+34.3
+67.7
+66.5
+67.1
+47.4
+15.9
+23.8
+60.8
+53.9
+57.2
+BERT-bn
+34.5
+31.9
+33.1
+68.4
+53.0
+59.7
+35.4
+20.6
+26.0
+57.8
+45.1
+50.7
+ASR
+BERT-m [16]
+29.3
+30.0
+29.7
+60.6
+60.2
+60.4
+36.1
+38.4
+37.2
+51.7
+52.0
+51.9
+DistilBERT-m [16]
+29.0
+33.6
+31.1
+62.6
+50.6
+56.0
+31.3
+20.8
+25.0
+51.2
+44.3
+47.5
+XLM-MLM-100-1280 [16]
+31.2
+38.7
+34.6
+63.4
+59.5
+61.4
+32.0
+24.8
+27.9
+52.8
+51.9
+52.4
+XLM-RoBERTa [16]
+38.3
+35.6
+36.9
+69.2
+77.2
+73.0
+38.5
+52.0
+44.2
+60.3
+66.4
+63.2
+Bangla Electra
+31.6
+24.1
+27.4
+61.4
+48.1
+53.9
+33.3
+0.8
+1.6
+54.8
+38.7
+45.3
+Indic-BERT
+30.6
+32.4
+31.5
+64.4
+63.9
+64.1
+45.2
+22.4
+29.9
+55.9
+53.5
+54.7
+Indic-DistilBERT
+38.1
+32.8
+35.2
+64.9
+69.1
+67.0
+46.8
+17.6
+25.6
+59.4
+56.8
+58.0
+Indic-RoBERTa
+28.3
+31.6
+29.9
+62.1
+55.7
+58.7
+33.7
+24.8
+28.6
+51.7
+47.8
+49.7
+Indic-XLM-RoBERTa
+28.8
+31.2
+30.0
+62.0
+63.8
+62.9
+44.7
+16.8
+24.4
+54.0
+52.6
+53.3
+BERT-bn
+25.9
+24.5
+25.2
+61.3
+51.5
+56.0
+34.2
+20.8
+25.9
+51.4
+43.1
+46.9
+5.4
+Punctuation Restoration
+In Table 22, we report the results of the punctuation restoration task, which comprises news,
+manual, and ASR transcriptions. For this task, we report the precision (𝑃), recall (𝑅), and F1, and
+we present results for each punctuation category. The overall score was calculated by ignoring the
+no punctuation entries (O tokens). We observed that monolingual models did not perform well for
+this task. The results reported in [16] show that the XLM-RoBERTa large model performs the best
+across different datasets such as news, manual, and ASR transcriptions. Among the monolingual
+models, Indic-DistilBERT performs better overall. For news text, manual, and ASR transcriptions,
+the F1 score is 80%, 61.5%, and 58.0%, respectively.
+As expected, the performance on the news test set is better than the transcribed texts for all
+models. Due to errors introduced by the ASR model, performance in ASR transcriptions are lower
+than manual transcriptions. Among different labels, performance in Comma is significantly worse
+in the transcribed texts.
+5.5
+Machine Translation
+In Table 23, we present the performance of the transformer model, including baseline and state-of-
+art results on the SUPara test set. It is evident from the state-of-art results that our model provides
+the second best results on the SUPara test set.
+29
+
+Table 23. Results on the SUPara test set for MT.
+Experiments
+BLEU
+shu-torjoma (baseline) [149]
+17.4
+BiLSTM [89]
+19.9
+NMT [148]
+22.7
+Transformer [93]
+32.1
+Ours
+24.3
+Fig. 7. Example sentences with wrong translations by transformer model.
+The transformer-based models provide better results compared to other statistical and NMT
+models. However, it has problems with translating rare words, especially nouns. Increasing the
+amount of training data did not yield the performance expected, due to morphological complexity
+[91], and highly inflected words [93]. The translation quality of the test set is not up to the mark
+[89, 93] and the training set contains both American and British English, which creates an impact
+on the overall performance. There is also translation from Indian Bangla to English, and some
+translations of lexemes differ from Bangladeshi Bangla (e.g., ‘jamuna’, ‘yamuna’).
+In the first two sentences of Figure 7, we present examples of the incorrect translation of the
+target sentence and the appropriate prediction of the model. We observed that some of the words
+that have abbreviations (i.e., US Dollar and USD) have an effect on the translation score. In the third
+sentence of Figure 7, we present an example that our system could not predict correctly. These
+types of errors are mostly observed in sentences due to the presence of rare words. Our study also
+reveals that the translation of a sentence might be entirely wrong in the presence of rare words or
+unknown words.
+Another important issue that we observed is that the translations of spoken corpora differ from
+other corpora. For example, the Tanzil corpus also has translation issues, and is focused primarily
+on religious topics. The corpus has many long sentences, which made it difficult while training the
+transformer models. It also has more Bangla tokens than English compared to other corpora; noisy
+words and covers different domains that create difficulties for the model to predict proper words
+for the target sequence. Another example is the GlobalVoices dataset, which creates difficulties
+30
+
+in overall performance because of its long segments, and NMT can not translate long sentences
+properly [120].
+Our reported results on the SUPara test set are the second-best existing system. However, reaching
+results that are on par with resource-rich languages is still a big challenge because of morphological
+complexity, namely inflectional morphemes and inflected words, which is further compounded by
+a lack of resources. More good quality translation is required to improve on these results for future
+work.
+5.6
+Sentiment Classification
+In Table 24, we report the classification results for each sentiment dataset. It summarizes the results
+obtained by different transformer models for individual and combined datasets. The study by
+Hasan et al. [92] report results on individual datasets, using classical and three transformers models
+such as the multilingual version of BERT-m, DistilBERT-m, and XLM-RoBERTa. They only report
+the F1 measure for each model. Here, we experiment using nine monolingual and multilingual
+transformer models for both individual and consolidated datasets. For all models, we report the
+accuracy, precision, recall, and F-measure. We had consistent improvement using the combined
+dataset across all models. It shows that data consolidation improves performance for the sentiment
+classification task. Among transformer-based models, BERT performs better on three datasets, and
+XLM-RoBERTa performs well on two datasets. For the combined dataset, XLM-RoBERTa is the best
+performing architecture. Indic-DistilBERT, Indic-BERT, and BERT-bn perform comparably on the
+combined dataset.
+Table 24. Results on the test set for Sentiment classification. Best results on the combined dataset are
+highlighted with bold form.
+Bangla-Electra
+Indic-BERT
+Indic-DistilBERT
+Acc
+P
+R
+F1
+Acc
+P
+R
+F1
+Acc
+P
+R
+F1
+ABSA cricket
+71.3 63.5 71.3
+67.0
+71.1
+71.8 71.1
+71.4
+72.9
+70.9 72.9
+71.6
+ABSA restaurant
+50.2 35.7 50.2
+40.9
+60.3
+58.7 60.3
+58.7
+65.8
+65.3 65.8
+64.7
+SAIL
+53.3
+51.9 53.3 49.8
+61.3
+61.2 61.3
+61.2
+59.3 58.9
+59.3
+59.0
+BengFastText
+68.7
+73.0 68.7 66.8
+68.7
+77.0 68.7
+65.7
+68.7 77.2
+68.7
+65.7
+Youtube comments
+67.4 66.2 67.4 66.6
+75.7
+75.0 75.7
+75.2
+74.8
+75.1 74.8
+74.9
+CogniSenti
+63.9 58.3 63.9
+59.3
+66.1
+65.6 66.1
+65.8
+68.5
+67.6 68.5
+67.9
+Combined
+72.0
+72.4 72.0
+71.8
+80.3
+80.3
+80.3
+80.2
+81.3
+81.4 81.3
+81.3
+Indic-RoBERTa
+Indic-XLM-RoBERTa
+BERT-bn
+ABSA cricket
+70.8 70.5 70.8
+70.6
+72.4
+70.9 72.4
+71.6
+71.1
+67.8 71.1
+69.2
+ABSA restaurant
+68.0 67.2 68.0
+66.9
+63.5
+63.4 63.5
+62.1
+60.7
+59.3 60.7
+58.5
+SAIL
+63.3
+62.8 63.3 62.6
+60.0
+59.5 60.0
+59.1
+60.7 59.8
+60.7
+59.5
+BengFastText
+68.8
+75.4 68.8 66.2
+70.5
+78.0 70.5
+68.0
+69.0 75.5
+69.0
+66.5
+Youtube comments
+75.0 74.8 75.0 74.8
+74.3
+74.5 74.3
+74.3
+73.3
+72.6 73.3
+72.9
+CogniSenti
+66.8 66.2 66.8
+66.5
+66.5
+66.3 66.5
+66.4
+62.4
+62.1 62.4
+62.2
+Combined
+80.2
+80.1 80.2
+80.1
+79.8
+79.8
+79.8
+79.8
+79.3
+79.3 79.3
+79.2
+BERT-m
+DistilBERT-m
+XLM-RoBERTa
+ABSA cricket
+67.7 69.2 67.7
+68.2
+74.5
+66.5 74.5
+69.9
+67.7
+68.2 67.7
+68.2
+ABSA restaurant
+59.8 58.6 59.8
+58.1
+60.3
+57.7 60.3
+57.9
+70.8
+71.6 70.8
+69.2
+SAIL
+56.7
+56.6 56.7 56.6
+57.3
+57.0 57.3
+57.0
+56.7 56.6
+56.7
+56.6
+BengFastText
+69.6
+75.6 69.6 67.4
+69.1
+74.6 69.1
+66.9
+69.6 75.3
+69.6
+67.4
+Youtube comments
+72.6 73.3 72.6 72.9
+70.0
+70.4 70.0
+70.1
+72.6
+73.3 72.6
+72.9
+CogniSenti
+68.9 68.5 68.9
+68.6
+59.2
+58.6 59.2
+58.9
+68.9
+68.5 68.9
+68.6
+Combined
+80.0
+79.9 80.0
+79.9
+74.3
+74.8
+74.3
+74.2
+82.0
+82.0 82.0
+82.0
+31
+
+Table 25. Results on the test set for Emotion classification.
+Model
+Acc
+P
+R
+F1
+Baseline (NB [189])
+52.5
+-
+-
+52.5
+Baseline (SVM [189])
+49.3
+-
+-
+49.8
+Baseline (CNN [189])
+54.0
+-
+-
+53.5
+Baseline (LSTM [189])
+59.2
+-
+-
+52.9
+Bangla Electra
+43.8
+38.3 43.8
+36.3
+Indic-BERT
+50.6 52.1
+50.6
+49.1
+Indic-DistilBERT
+59.4
+58.4
+59.4 57.3
+Indic-RoBERTa
+60.3
+55.8
+60.3 57.0
+Indic-XLM-RoBERTa
+53.1 48.8
+53.1
+49.6
+BERT-bn
+49.1 46.7
+49.1
+46.9
+BERT-m
+60.4
+59.5
+60.4 59.1
+DistilBERT-m
+69.8
+68.4
+69.8 66.6
+XLM-RoBERTa
+72.7
+70.3
+72.7 70.6
+Table 26. Results on the test set of News categorization.
+Model
+Acc
+P
+R
+F1
+Baseline (FT-W [126])
+62.8
+-
+-
+Baseline (FT-WC [126])
+64.8
+-
+-
+Baseline (INLP [126])
+72.5
+-
+-
+Bangla Electra
+80.4
+78.5 80.4
+79.2
+Indic-BERT
+94.1
+94.1
+94.1 94.1
+Indic-DistilBERT
+89.0
+90.2 89.0
+89.4
+Indic-RoBERTa
+81.6
+81.6 81.6
+81.4
+Indic-XLM-RoBERTa
+94.0
+94.1 94.0
+94.0
+BERT-bn
+91.0
+91.2 91.0
+91.0
+BERT-m
+91.3
+91.5 91.3
+91.3
+DistilBERT-m
+79.5
+79.4 79.5
+79.0
+XLM-RoBERTa
+93.4
+93.4 93.7
+93.4
+5.7
+Emotion Classification
+In Table 25, we report the results for emotion classification and compare it to the performances
+reported in [189]. We obtained better results using the using XLM-RoBERTa model compared to
+others. Across multilingual transformer models, DistilBERT-m is the second best model. Among
+the monolingual models, the Indic-RoBERTa model performs better than other models for emotion
+classification.
+5.8
+News Categorization
+For the news categorization task, we report the results in Table 26. We used the same training,
+validation and test splits provided in [15, 126] for news categorization. The authors in [126] used
+fastText embedding trained on different corpora to train the KNN classifier. In comparison, Alam
+et al. [15] experiment with BERT-m and XLM-RoBERTa models. The performances of transformer
+models are higher than the results reported in [126] in terms of accuracy. We obtained the best
+results using Indic-BERT, the second-best with Indic-XLM-RoBERTa and the next one is with
+XLM-RoBERTa. We can conclude from the results that transformer-based models are better suited
+for Bangla news categorization tasks than classical machine learning-based approaches that use
+manually engineered features or CNN/LSTM models trained on distributed word representation.
+32
+
+Table 27. Results on test set for Authorship classification.
+Model
+Acc
+P
+R
+F1
+Baseline (Char-CNN [118])
+69.0
+-
+-
+-
+Baseline (W2V (CBOW) [118])
+71.8
+-
+-
+-
+Baseline (fastText (CBOW) [118])
+40.3
+-
+-
+-
+Baseline (W2V (Skip) [118])
+78.6
+-
+-
+-
+Baseline (fastText (Skip) [118])
+81.2
+-
+-
+-
+Bangla Electra
+25.1
+29.3
+25.1
+19.8
+Indic-BERT
+95.2
+95.3
+95.2 95.2
+Indic-DistilBERT
+87.4 87.6
+87.4
+87.3
+Indic-RoBERTa
+37.3
+43.4
+37.3
+33.3
+Indic-XLM-RoBERTa
+94.6 94.8
+94.6
+94.6
+BERT-bn
+90.2 90.3
+90.2
+90.2
+BERT-m
+82.6 85.1
+82.6
+82.8
+DistilBERT-m
+58.8
+58.6
+58.6
+57.6
+XLM-RoBERTa
+93.8 94.1
+93.8
+93.8
+5.9
+Authorship Attribution
+In Table 27, we report the results with a comparison with previous work. The authors in [118]
+reported results for character and word level CNN models trained with fastText and word2vec
+embedding, and the best results were obtained with skip-gram variants of fastText embedding.
+All transformer models perform better than previously reported results except Bangla Electra,
+Indic-RoBERTa, and DistilBERT-m. We obtained the best results using the Indic-BERT model,
+accuracy of 95.2%, which is a 14% absolute improvement compared to the previous best model
+reported in [118].
+6
+DISCUSSIONS, CHALLENGES AND FUTURE WORK
+6.1
+Resources
+Some of the major challenges that are limiting further research in BNLP are: (i) the availability and
+accessibility of resources; (ii) the lack of reliability on annotated labels, with no proper guidelines or
+evaluation measures like inter-annotator agreement; and (iii) the lack of comparable benchmarking
+performance – due to the absence of well-defined train/dev/test splits.
+To overcome these challenges, in Table 28, we present the proprietary and publicly available –
+25 – datasets for different tasks, listing their sizes in terms of the number of sentences and tokens;
+their content type (e.g., news articles, blogs, social media); license and URL. From the table, we can
+observe that there is a higher number of datasets for POS, MT, and sentiment tasks than others. In
+many cases, license information and train/dev/test splits are not available. It is also interesting to
+see that some datasets have been released as creative commons BY-SA type license, which allows
+others to use them for any purposes freely.
+6.2
+Modeling
+6.2.1
+Model Comparison. From our extensive literature review, we observed that the research has
+been following a trend from rule-based systems to deep learning-based approaches for different
+tasks. The recently developed transformer-based models have not been explored very extensively.
+Hence, we benchmark these tasks with transformer-based architecture in our study. We experiment
+with monolingual and multilingual transformer models, which also vary in their computational
+complexity (e.g., number of parameters). Across different tasks and pretrained models, we observed
+that the performances of different models vary. In Table 29, we report the models with the top
+33
+
+three ranks for eight different tasks.34 Out of eight tasks in said Table, multilingual XLM-RoBERTa
+performs best in six tasks, whereas the Indic-BERT monolingual model performs best in two tasks.
+Indic-DistilBERT and Indic-XLM-RoBERTa are the second-best models. Each of them performed
+second best in three tasks.
+We hypothesize that the performances of the models are associated with their configuration in
+the architectural design. As shown in Table 6, XLM-RoBERTa is the largest in terms of vocab size,
+hidden units, number of layers, and attention heads; hence, this might be a reason that task-specific
+model trained using this architecture and pretrained model performed better for the majority cases.
+6.2.2
+Inference Time Comparison: While the said models are far better than classical algorithms
+(e.g., SVM, RF), it comes with significant computational complexity. Both the training and the
+inference time are significantly higher compared to classical algorithms. To give a better estimate,
+we compare the training and inference time between SVM and XLM-RoBERTa using the combined
+sentiment dataset (training set size 16,213 and test set size 3,741).
+The training and inference time for SVM was 2 hours 32 minutes 30 seconds, and 4 seconds,
+respectively. For XLM-RoBERTa, it took 3 hours 42 minutes 41 seconds for training and 1 minute
+21 seconds for inference. Note that for SVM, we tune: C, G, kernel (linear and gamma) parameters.
+We fine-tune the XLM-RoBERTa for ten epochs. We run the experiments on a machine consisting
+of 22 CPUs, 50GB memory, and a GPU with 16GB memory. Such a finding clearly shows that a
+transformer-based model takes significantly high computation time even during inference. For
+example, in this case, the XLM-RoBERTa model took 20 times higher than SVM during inference.
+We obtained a weighted F1 score of 64.1% using SVM and 82.0% using XLM-RoBERTa, which is
+∼18% absolute improvement. This indicates that a trade-off needs to be taken into account for
+application deployment.
+This is one of the significant challenges that the community is facing now. Our experiments
+show that performances vary across large vs. small models. Future research should also consider
+this aspect as this is important for real-time deployment.
+6.2.3
+Error Analysis. As the multilingual XLM-RoBERTa𝑙𝑎𝑟𝑔𝑒model has performed better across
+different tasks, we analyzed its different characteristics including impact of tokenization to presence
+of different words and its learned representation. In the following, we discuss a number of key
+points in our findings from our analysis on several tasks.
+34We do not report MT tasks in the aforesaid Table as the MT model has been trained using one model.
+35https://catalog.ldc.upenn.edu/LDC2010T16
+36https://www.isical.ac.in/utpal/docs/Bengali_Dataset.rar
+37https://github.com/xashru/punctuation-restoration
+38https://github.com/joshua-decoder/indian-parallel-corpora
+39https://www.opensubtitles.org/
+40http://lotus.kuee.kyoto-u.ac.jp/WAT/indic-multilingual/
+41https://ieee-dataport.org/open-access/supara-benchmark-benchmark-dataset-english-bangla-machine-translation
+42https://github.com/AridHasan/Data-Collection-System-for-Machine-Translation
+43https://opus.nlpl.eu/GlobalVoices-v2018q4.php
+44https://opus.nlpl.eu/Tatoeba-v2021-03-10.php
+45https://opus.nlpl.eu/Tanzil-v1.php
+46https://github.com/AtikRahman/Bangla_ABSA_Datasets
+47https://github.com/rezacsedu/Classification_Benchmarks_Benglai_NLP
+48http://amitavadas.com/SAIL/
+49https://www.kaggle.com/nit003/bangla-youtube-sentiment-and-emotion-datasets
+50https://www.kaggle.com/csoham/classification-bengali-news-articles-indicnlp
+51https://data.mendeley.com/datasets/6d9jrkgtvv/2
+34
+
+Table 28. Dataset for different NLP tasks. SIPC: Six Indian Parallel Corpora, YT: Youtube, News Cat.: News
+Categorization.
+Task
+Dataset
+Size
+Content Type
+License
+Data Split
+URL
+POS
+Indian Language
+Part-of-Speech
+Tagset: Bengali [26, 113]
+7,398 sentences
+102,920 tokens
+Blogs, Wikipedia,
+Multikulti and
+a portion of the
+EMILLE/CIIL corpus
+LDC
+train 70%,
+dev 15%,
+test 15%
+35
+IITKGP Corpus [125]
+5,473 sentences,
+72,400 tokens
+News articles
+NA
+NA
+NA
+CRBLP Corpus[190]
+1,176 sentences
+20,000 tokens
+News articles
+NA
+NA
+NA
+Lemma
+BenLem Dataset [36]
+1,702 sentences
+Rabindranath Tagore
+short stories
+and news articles
+NA
+train 70%,
+dev 15%,
+test 15%
+36
+NER
+BCAB [48]
+2,137 sentences
+News articles
+Proprietary
+train 70%,
+dev 10%,
+test 20%
+NA
+Punc.
+Punctuation
+Restoration [16]
+4,700 news articles
+1.628M tokens
+News articles
+CC BY 4.0, MIT
+train 1.38M,
+dev 180K,
+test 88K tokens
+37
+Manual trans. 6,821 tokens
+ASR trans. 6,417 tokens
+Bangla short stories
+MT
+SIPC [165]
+20,788 sentences
+CC BY-SA 3.0
+NA
+38
+OpenSubtitles [131]
+413,602 sentences
+Movie subtitles
+NA
+NA
+39
+ILMPC [150]
+337K sentences
+Movie subtitles,
+Speech translation
+NA
+NA
+40
+SUPara [3, 4]
+70,861 sentences
+CC BY-SA 4.0
+train: 1,162,504,
+dev: 500, test 500
+sentences
+41
+AmaderCAT [91]
+1,782 sentences
+News articles
+GPL-3.0
+NA
+42
+PTB
+1,313 sentences
+News articles
+LDC
+NA
+GlobalVoices
+137,620 sentence
+Speech corpora
+translation
+NA
+NA
+43
+Tatoeba
+5,120 sentences
+CC BY 2.0 FR
+NA
+44
+Tanzil
+187,052 sentences
+Non-commercial
+NA
+45
+Sentiment
+ABSA Cricket [167]
+2,837 comments
+FB posts,
+News comments
+CC BY 4.0
+NA
+46
+ABSA Restaurant [167]
+1,808 translated sentences
+Reviews
+CC BY 4.0
+NA
+46
+BengFastText [169]
+8,420 posts
+News articles
+FB posts
+NA
+NA
+47
+SAIL [161]
+998 tweets
+Twitter
+Non-profit
+train 70%,
+dev 15%,
+test 15%
+48
+YT Comments [92, 189]
+2,796 comments
+Youtube
+NA
+train 70%,
+dev 15%,
+test 15%
+49
+CogniSenti
+6,570 posts
+Twitter, FB Posts
+Proprietary
+train 70%,
+dev 15%,
+test 15%
+NA
+Emotion
+YT Emotion [15, 189]
+2,890 comments
+Youtube
+NA
+train 72%,
+dev 18%,
+test 10%
+49
+News Cat.
+News Corpus [15, 126]
+14,106 articles
+News articles
+CC BY-NC-SA 4.0
+train 80%,
+dev 10%,
+test 10%
+50
+Authorship Authorship Data [15, 118]
+17,558 stories
+E-book
+CC BY 4.0
+train 77%,
+dev 19%
+test 4%
+51
+Impact of Tokenization and Subword Embedding: We realized that various factors are
+contributing to the performance gain by XLM-RoBERTa𝑙𝑎𝑟𝑔𝑒. It is trained on a larger corpus and
+has a larger vocabulary size. As a result, fewer unknown tokens are introduced after tokenization.
+In Figure 8, we present an example of a sentence tokenized using XLM-RoBERTa𝑙𝑎𝑟𝑔𝑒and BERT𝑏𝑎𝑠𝑒.
+35
+
+Table 29. Rank of the models across tasks. R𝑛represents the top three models in ranked order. Auth: Author-
+ship, Emo: Emotion, Senti: Sentiment, Punc. : Punctuation Restoration. ∗∗the model has been trained using a
+modified version of the original architecture.
+Lang
+Model
+Model Type
+POS
+Lemma
+NER
+Punc.
+Senti
+Emo
+News
+Auth
+Mono
+Bangla Electra
+base
+Indic-BERT
+base
+R3
+R3
+R3
+R1
+R1
+Indic-DistilBERT
+base
+R2
+R2
+R2
+Indic-RoBERTa
+∗∗
+Indic-XLM-RoBERTa
+∗∗
+R2
+R2
+R2
+BERT-bn
+base
+R2
+Multi
+BERT-m
+base
+R3
+R3
+R3
+DistilBERT-m
+base
+R2
+XLM-RoBERTa
+large
+R1
+R1
+R1
+R1
+R1
+R1
+R3
+R3
+Fig. 8. Output of the different tokenizers.
+We can see that the XLM-RoBERTa𝑙𝑎𝑟𝑔𝑒tokenizer performs better than the BERT𝑏𝑎𝑠𝑒tokenizer.
+When we use the BERT𝑏𝑎𝑠𝑒tokenizer, the last two words are replaced with the unknown tokens,
+even though they are not rare words in Bangla. On the other hand, the first word is split into several
+tokens. XLM-RoBERTa𝑙𝑎𝑟𝑔𝑒performs better in this regard due to the availability of more extensive
+vocabulary for Bangla in the model. As XLM-RoBERTa𝑙𝑎𝑟𝑔𝑒is a model trained with more layers
+and parameters, it also has better generalization ability compared to other models. This results in
+better performance in the downstream tasks.
+The transformer-based model uses subword embedding [183]. One advantage of using subword
+embeddings is that it can perform better in noisy user-generated text like those found in online
+media. As they contain misspellings and shortened words, subword embeddings (also character
+embedding) can still capture meaningful information. People also often comment in both Bangla
+and English on such platforms, as seen in the YouTube datasets. Multilingual transformer models
+are better suited for such types of social media text. Note that the use of transformer models for
+fine-tuning also reduces the need for feature engineering and data preprocessing. We did not use
+any separate text preprocessing steps (e.g., stop words and punctuation removal) other than using
+the model-specific tokenizers.
+Prediction Interpretation: For a better interpretation of the models, we explore a sentiment
+model trained using XLM-RoBERTa𝑙𝑎𝑟𝑔𝑒and show word importance with three examples as shown
+in Figure 9. These representations are produced using Captum toolkit [121].52
+In Figure 9a, the model assigns a high emphasis on positive words (good). The first sentence,
+sent 1 (I don’t know why!), can be considered to be slightly negative and is reflected in the word
+importance. In Figure 9b, negative words (bad) are properly highlighted to arrive at the overall
+negative sentiment. Interestingly the word (very) is highlighted as the opposite, i.e., positive,
+meaning the model was not able to combine two words and emphasize the phrase (very bad) as
+negative. Finally, the sentence in Figure 9c is more challenging. However, the model is able to
+identify the overall positive tone despite the presence of some negative words like rarely, and bad.
+52https://github.com/pytorch/captum
+36
+
+(a) An example, which is detected as positive sentiment with a probability of 0.997.
+(b) An example, which is detected as negative sentiment with a probability of 0.963.
+(c) An example, which is detected as positive sentiment with a probability of 0.980.
+Fig. 9. Examples from the XLM-RoBERTa𝑙𝑎𝑟𝑔𝑒sentiment model highlighting the importance of words that
+the network learns.
+From the analysis, we can conclude that transformer-based models can learn the discriminating
+characteristics needed for classification.
+6.3
+Results Summary
+From our cross-architectural performance comparison, (see Figure 10), we observed that the
+XLM-RoBERTa model consistently outperforms other fine-tuned models across the tasks. We
+noticed Indic-BERT and Indic-XLM-RoBERTa models are competitive to each other. Whereas Indic-
+DistilBERT performs slightly worse than these two models while having less than half the number
+of parameters. Moreover, we noticed fine-tuned multilingual models gives better performance than
+the monolingual models. Thus reflecting the potential of utilizing the existing pretrained models to
+push the boundaries in BNLP and point out a need for better monolingual pretrained models.
+Further analyzing cross-task performances (in Table 30), we noticed that current performance is
+bound with the community engagement. The tasks that have received wide attention in the research
+community have significantly higher performance. For example, while considering the POS tagging
+and punctuation restoration task, we noticed a huge difference in their current performance. There
+has been a significant amount of work for Bangla POS tagging (can be seen in Table 1 15 literature)
+37
+
+Fig. 10. Performance of the models across different tasks
+Table 30. Best results for different tasks.
+Task
+Model
+Dataset
+Acc
+P
+R
+F1
+POS
+XLM-RoBERTa LDC [125], IITKPG [125], CRBLP [190] [6]
+90.1
+87.0
+86.4
+86.7
+Lemma
+XLM-RoBERTa Chakrabarty et al. [36]
+75.1
+75.1
+74.9
+75.0
+NER
+XLM-RoBERTa CogniData [48]
+87.0
+63.6
+70.5
+66.9
+Punc.
+XLM-RoBERTa News [16]
+-
+87.8
+86.2
+87.0
+XLM-RoBERTa Ref. Trans. [16]
+-
+67.6
+70.2
+68.8
+XLM-RoBERTa ASR Trans. [16]
+-
+60.3
+66.4
+63.2
+Sentiment
+XLM-RoBERTa Combined data set [92]
+82.3
+82.3
+82.3
+82.2
+Emotion
+XLM-RoBERTa Youtube comments [15, 189]
+72.7
+70.3
+72.7
+70.6
+News Cat.
+Indic-BERT
+News Corpus [15, 126]
+94.1
+94.1
+94.1
+94.1
+Authorship Indic-BERT
+Bangla e-books [15, 118]
+95.2
+95.3
+95.2
+95.2
+BLEU
+MT
+Transformer
+Combined data set [89]
+22.7
+which resulted to the development of reliable resources, hence better performance (POS:86.7).
+Whereas, we found only one study for the punctuation restoration in Bangla content, resulting in
+fewer resources and design choices to explore and compare performance with.
+6.4
+Future Research Directions
+There are various avenues of research that we foresee for BNLP.
+Reliable Resource Design: One of the major directions for BNLP would be developing reliable
+resources, by following well-defined dataset development guidelines [27, 81, 101, 104]. To increase
+reliability and ensure the quality of the annotation, we encourage the community to provide: (i)
+annotation guidelines, (ii) annotation agreement, (iii) demographic details of the annotators.
+38
+
+Accessible Resource: Proper licensing and clearly providing that information can help the com-
+munity to (re-)use the dataset accordingly, while giving the proper credit to the data owner.
+Reliable and Reproducible Benchmark: The growth of a scientific field is often the result of the
+cumulative effort of the community. The research findings become hard to re-use and reproduce in
+the absence of a proper description of methodology, input processing, architectural parameters,
+proper data splits and potentially missing information of the computational environment used to
+carry the experiments. Besides limiting the re-usability, such a lack of information also hinders
+the reliability of the presented results. Therefore, we urge the community to collaborate in the
+endeavor to enrich Bangla language computing by focusing on creating reproducible work and
+benchmarks.
+Strengthen Monolingual Pretrained Transformer Models: Efficacy of monolingual pretrained trans-
+formers are often observed in high-resource languages over multilingual counterparts [32, 47, 143,
+154, 163]. However, such effectiveness depends on having trained the model with large and diverse
+training data. In low-resource languages, like Bangla, developing such monolingual transformer
+models can play a crucial part in pushing the performance further. We believe such large monolin-
+gual models have the potential to outperform53 our results reported using XLM-RoBERTa. Thus
+making it an important future research avenue.
+Technology Transfer. Transferring applied research to a usable product is another important
+challenge. As a community, we need to engage with the industry to understand the proper tech-
+nology scope, answering “what technology to transfer” and how to find a trade-off between the
+computational complexity and the model performance.
+Broaden the Horizon. Moreover, we also invite the community to explore several other topics that
+require wide attention, specifically, tasks involved in speech processing (e.g., speech recognition,
+speech synthesis), image processing (e.g., OCR).
+7
+CONCLUSION
+In an effort to further enrich the Bangla natural language processing community and to keep pace
+with the rapidly evolving ML techniques, we presented our study in two folds. First, we provide a
+comprehensive survey of nine different BNLP tasks through an extensive literature review. Second,
+we further augment the surveyed fields with our own experiments using current state-of-the-art
+algorithms. For the current study, we focused on token and text classification – ranging from
+POS tagging to emotion classification, as well as machine translation. We reviewed 108 papers
+covering decades of research, and reported the resources that have been developed so far, along
+with approaches proposed in various studies for the aforesaid tasks. We then performed extensive
+experiments using available resources and the current state-of-the-art transformer models - a
+popular and de facto choice for text modeling. We explored various monolingual and multilingual
+pretrained transformers, varying in terms of computation complexities. We performed a total of
+175 set of experiments for nine different tasks using these models. Our work shows that fine-tuning
+the transformer models can yield better performance than the traditional methods that use hand-
+crafted features and other deep learning models like CNN and LSTM trained on distributed word
+representation. We obtained state-of-the-art results on the selected tasks, across different datasets
+from various domains. Our experiment results can serve as benchmarks for future work. We hope
+the present study will encourage researchers to make use of said models for various tasks in Bangla
+53As indicated in [28].
+39
+
+NLP, and serve as a stepping stone for future endeavors that will contribute to enriching BNLP
+research.
+REFERENCES
+[1] Chandranath Adak. 2013. An advanced approach for rule based English to Bengali machine translation. Computer
+Science & Information Technology (2013), 1.
+[2] S. Al Mostakim, F. Ehsan, S. Mahdiea Hasan, S. Islam, and S. Shatabda. 2018. Bangla Content Categorization Using
+Text Based Supervised Learning Methods. In 2018 International Conference on Bangla Speech and Language Processing
+(ICBSLP). 1–6.
+[3] Md Abdullah Al Mumin, Seddiqui M. H., M Zafar Iqbal, and M. J. Islam. 2018. SUPara-Benchmark: A Benchmark
+Dataset for English-Bangla Machine Translation. http://dx.doi.org/10.21227/czes-gs42
+[4] Md Abdullah Al Mumin, M. H. Seddiqui, M Zafar Iqbal, and M. J. Islam. 2018. SUPara0.8M: A Balanced English-Bangla
+Parallel Corpus. https://doi.org/10.21227/gz0b-5p24
+[5] Firoj Alam. 2012. EVALITA 2011: Named Entity Recognition on Transcription using cascaded classifiers. In Working
+Notes of EVALITA 2011.
+[6] Firoj Alam, Shammur Absar Chowdhury, and Sheak Rashed Haider Noori. 2016. Bidirectional LSTMs—CRFs networks
+for bangla POS tagging. In 2016 19th International Conference on Computer and Information Technology (ICCIT). IEEE,
+377–382.
+[7] Firoj Alam, SM Habib, and Mumit Khan. 2009. Text normalization system for Bangla. In Conference on Language and
+Technology.
+[8] Firoj Alam, SM Habib, Dil Afroza Sultana, and Mumit Khan. 2010. Development of annotated Bangla speech corpora.
+In Spoken Language Technologies for Under-resourced language.
+[9] Firoj Alam, SM Murtoza Habib, and Mumit Khan. 2008. Acoustic Analysis of Bangla Consonants. In Proc. Spoken
+Language Technologies for Under-resourced language (SLTU’08). 5–7.
+[10] Firoj Alam, Bernardo Magnini, and Roberto Zanoli. [n.d.]. Comparing Named Entity Recognition on Transcriptions and
+Written Texts, Harmonization and Development of Resources and Tools for Italian Natural Language Processing within
+the PARLI Project. Vol. 589. Springer.
+[11] Firoj Alam, Promila Kanti Nath, and Dr Mumit Khan. 2007. Text to speech for Bangla language using festival. In Proc.
+1st Intl. Conf. on Digital Comm. and Computer Applications, Vol. 1. 853–859.
+[12] Firoj Alam and Roberto Zanoli. 2013. A Combination of Classifiers for Named Entity Recognition on Transcription.
+Springer, 107–115.
+[13] Md Alam, Naushad UzZaman, Mumit Khan, et al. 2007. N-gram based statistical grammar checker for Bangla and
+English. Technical Report. BRAC University.
+[14] Md Habibul Alam, Md-Mizanur Rahoman, and Md Abul Kalam Azad. 2017. Sentiment Analysis for Bangla Sentences
+using Convolutional Neural Network. In 2017 20th International Conference on Computer and Information Technology
+(ICCIT). IEEE, 1–6.
+[15] Tanvirul Alam, Akib Khan, and Firoj Alam. 2020. Bangla Text Classification using Transformers. arXiv preprint
+arXiv:2011.04446 (2020).
+[16] Tanvirul Alam, Akib Khan, and Firoj Alam. 2020. Punctuation Restoration using Transformer Models for High-and
+Low-Resource Languages. In Proceedings of the Sixth Workshop on Noisy User-generated Text (W-NUT 2020). Association
+for Computational Linguistics, 132–142.
+[17] Hammad Ali. 2010. An unsupervised parts-of-speech tagger for the bangla language. Department of Computer Science,
+University of British Columbia 20 (2010), 1–8.
+[18] Yasemin Altun, Ioannis Tsochantaridis, Thomas Hofmann, et al. 2003. Hidden markov support vector machines. In
+ICML, Vol. 3. 3–10.
+[19] PJ Antony. 2013. Machine translation approaches and survey for Indian languages. In International Journal of
+Computational Linguistics & Chinese Language Processing, Volume 18, Number 1, March 2013.
+[20] Md Akhter-Uz-Zaman Ashik, Shahriar Shovon, and Summit Haque. 2019. Data Set For Sentiment Analysis On Bengali
+News Comments And Its Baseline Evaluation. In Proc. of ICBSLP. IEEE, 1–5.
+[21] Shibli Syeed Ashrafi, Md Humayun Kabir, Md Musfique Anwar, and AKM Noman. 2013. English to Bangla machine
+translation system using Context-Free Grammars. International Journal of Computer Science Issues (IJCSI) 10, 3 (2013),
+144.
+[22] Abdullah Aziz Sharfuddin, Md. Nafis Tihami, and Md. Saiful Islam. 2018. A Deep Recurrent Neural Network with
+BiLSTM model for Sentiment Classification. In 2018 International Conference on Bangla Speech and Language Processing
+(ICBSLP). IEEE, 1–4.
+40
+
+[23] Somnath Banerjee, Sudip Kumar Naskar, and Sivaji Bandyopadhyay. 2014. Bengali named entity recognition using
+margin infused relaxed algorithm. In International Conference on TSD. Springer, 125–132.
+[24] Tamali Banerjee, Anoop Kunchukuttan, and Pushpak Bhattacharya. 2018. Multilingual Indian Language Translation
+System at WAT 2018: Many-to-one Phrase-based SMT. In Proceedings of the 32nd Pacific Asia Conference on Language,
+Information and Computation: 5th Workshop on Asian Translation: 5th Workshop on Asian Translation. Association for
+Computational Linguistics.
+[25] Nayan Banik and Md Hasan Hafizur Rahman. 2018. Evaluation of Naïve Bayes and Support Vector Machines on
+Bangla Textual Movie Reviews. In Proc. of ICBSLP. IEEE, 1–6.
+[26] Sankaran Baskaran, Kalika Bali, Tanmoy Bhattacharya, Pushpak Bhattacharyya, Girish Nath Jha, et al. 2008. A
+common parts-of-speech tagset framework for indian languages. In Proc. of LREC 2008. Citeseer.
+[27] Emily M. Bender and Batya Friedman. 2018. Data Statements for Natural Language Processing: Toward Mitigating
+System Bias and Enabling Better Science. Transactions of the Association for Computational Linguistics 6 (2018),
+587–604.
+[28] Abhik Bhattacharjee, Tahmid Hasan, Kazi Samin, M. Sohel Rahman, Anindya Iqbal, and Rifat Shahriyar.
+2021. BanglaBERT: Combating Embedding Barrier for Low-Resource Language Understanding. arXiv preprint
+arXiv:2101.00204 (2021). arXiv:cs.CL/2101.00204
+[29] Thorsten Brants. 2000. TnT: a statistical part-of-speech tagger. In Proceedings of the sixth conference on Applied natural
+language processing. Association for Computational Linguistics, 224–231.
+[30] Leo Breiman. 2001. Random forests. Machine learning 45, 1 (2001), 5–32.
+[31] P. Brown, J. Cocke, S. Della Pietra, V. Della Pietra, F. Jelinek, R. Mercer, and P. Roossin. 1988. A Statistical Approach
+to Language Translation. In Coling Budapest 1988 Volume 1: International Conference on Computational Linguistics.
+[32] José Canete, Gabriel Chaperon, Rodrigo Fuentes, and Jorge Pérez. 2020. Spanish pre-trained bert model and evaluation
+data. Pml4dc at iclr 2020 (2020).
+[33] Debasri Chakrabarti and Pune CDAC. 2011. Layered parts of speech tagging for bangla. Language in India, www.
+languageinindia. com, Special Volume: Problems of Parsing in Indian Languages (2011).
+[34] Abhisek Chakrabarty, Akshay Chaturvedi, and Utpal Garain. 2016. A Neural Lemmatizer for Bengali. In Proceedings
+of the Tenth International Conference on Language Resources and Evaluation (LREC’16). European Language Resources
+Association (ELRA), 2558–2561.
+[35] Abhisek Chakrabarty and Utpal Garain. 2016. Benlem (A bengali lemmatizer) and its role in WSD. ACM Transactions
+on Asian and Low-Resource Language Information Processing (TALLIP) 15, 3 (2016), 1–18.
+[36] Abhisek Chakrabarty, Onkar Arun Pandit, and Utpal Garain. 2017. Context Sensitive Lemmatization Using Two
+Successive Bidirectional Gated Recurrent Networks. In Proceedings of the 55th Annual Meeting of the Association for
+Computational Linguistics (Volume 1: Long Papers). Association for Computational Linguistics, 1481–1491.
+[37] Abhisek Chakrabarty, Onkar Arun Pandit, and Utpal Garain. 2017. Context Sensitive Lemmatization Using Two
+Successive Bidirectional Gated Recurrent Networks. In Proceedings of the 55th Annual Meeting of the Association for
+Computational Linguistics (Volume 1: Long Papers). Association for Computational Linguistics, 1481–1491.
+[38] Sanjay Chatterji, Devshri Roy, Sudeshna Sarkar, and Anupam Basu. 2009. A hybrid approach for bengali to hindi
+machine translation. In Proceedings of ICON-2009: 7th International Conference on Natural Language Processing. 81–91.
+[39] BB Chaudhuri and U Pal. 1998. A complete printed Bangla OCR system. Pattern recognition 31, 5 (1998), 531–549.
+[40] Bidyut Baran Chaudhuri and Suvankar Bhattacharya. 2008. An Experiment on Automatic Detection of Named Entities
+in Bangla. In Proceedings of the IJCNLP-08 Workshop on Named Entity Recognition for South and South East Asian
+Languages.
+[41] Xiaoyin Che, Sheng Luo, Haojin Yang, and Christoph Meinel. 2016. Sentence Boundary Detection Based on Parallel
+Lexical and Acoustic Models.. In Interspeech. 2528–2532.
+[42] Xiaoyin Che, Cheng Wang, Haojin Yang, and Christoph Meinel. 2016. Punctuation Prediction for Unsegmented
+Transcript Based on Word Vector. In Proceedings of the Tenth International Conference on Language Resources and
+Evaluation (LREC’16). European Language Resources Association (ELRA), 654–658.
+[43] Kyunghyun Cho, Bart Van Merriënboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, and
+Yoshua Bengio. 2014. Learning phrase representations using RNN encoder-decoder for statistical machine translation.
+arXiv preprint arXiv:1406.1078 (2014).
+[44] Rumman Rashid Chowdhury, Mohammad Shahadat Hossain, Sazzad Hossain, and Karl Andersson. 2019. Analyzing
+sentiment of movie reviews in Bangla by applying machine learning techniques. In Proc. of (ICBSLP). IEEE, 1–6.
+[45] S. Chowdhury and W. Chzowdhury. 2014. Performing sentiment analysis in Bangla microblog posts. In 2014
+International Conference on Informatics, Electronics Vision (ICIEV). 1–6.
+[46] Shammur Absar Chowdhury. 2010. Implementation of speech recognition system for bangla. Ph.D. Dissertation. BRAC
+University.
+41
+
+[47] Shammur Absar Chowdhury, Ahmed Abdelali, Kareem Darwish, Jung Soon-Gyo, Joni Salminen, and Bernard J Jansen.
+2020. Improving Arabic text categorization using transformer training diversification. In Proceedings of the Fifth
+Arabic Natural Language Processing Workshop. 226–236.
+[48] Shammur Absar Chowdhury, Firoj Alam, and Naira Khan. 2018. Towards Bangla named entity recognition. In 2018
+21st International Conference of Computer and Information Technology (ICCIT). IEEE, 1–7.
+[49] Shammur Absar Chowdhury, Firoj Alam, Naira Khan, and Sheak RH Noori. 2017. Bangla grapheme to phoneme
+conversion using conditional random fields. In 2017 20th International Conference of Computer and Information
+Technology (ICCIT) (2017-01-01). IEEE, 1–6.
+[50] Kevin Clark, Minh-Thang Luong, Quoc V. Le, and Christopher D. Manning. 2020. ELECTRA: Pre-training Text
+Encoders as Discriminators Rather Than Generators. In 8th International Conference on Learning Representations, ICLR
+2020, Addis Ababa, Ethiopia, April 26-30, 2020. OpenReview.net. https://openreview.net/forum?id=r1xMH1BtvB
+[51] Alexis Conneau, Kartikay Khandelwal, Naman Goyal, Vishrav Chaudhary, Guillaume Wenzek, Francisco Guzmán,
+Edouard Grave, Myle Ott, Luke Zettlemoyer, and Veselin Stoyanov. 2020. Unsupervised Cross-lingual Representation
+Learning at Scale. In Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics. Association
+for Computational Linguistics, 8440–8451.
+[52] Alexis Conneau and Guillaume Lample. 2019. Cross-lingual Language Model Pretraining. In Advances in Neural
+Information Processing Systems. 7057–7067.
+[53] Sandipan Dandapat and William Lewis. 2018. Training Deployable General Domain MT for a Low Resource Language
+Pair: English–Bangla. (2018).
+[54] Sandipan Dandapat and Sudeshna Sarkar. 2006. Part of speech tagging for bengali with hidden markov model.
+Proceeding of the NLPAI Machine Learning Competition (2006).
+[55] Sandipan Dandapat, Sudeshna Sarkar, and Anupam Basu. 2004. A Hybrid Model for Part-of-Speech Tagging and its
+Application to Bengali.. In International conference on computational intelligence. Citeseer, 169–172.
+[56] Sandipan Dandapat, Sudeshna Sarkar, and Anupam Basu. 2007. Automatic Part-of-Speech Tagging for Bengali:
+An Approach for Morphologically Rich Languages in a Poor Resource Scenario. In Proceedings of the 45th Annual
+Meeting of the Association for Computational Linguistics Companion Volume Proceedings of the Demo and Poster Sessions.
+Association for Computational Linguistics, 221–224.
+[57] Amitava Das and Sivaji Bandyopadhyay. 2010. Morphological stemming cluster identification for Bangla. Knowledge
+Sharing Event-1: Task 3 (2010).
+[58] Amitava Das and Sivaji Bandyopadhyay. 2010. Phrase-level polarity identification for Bangla. Int. J. Comput. Linguist.
+Appl.(IJCLA) 1, 1-2 (2010), 169–182.
+[59] Amitava Das and Sivaji Bandyopadhyay. 2010. SentiWordNet for Bangla. Knowledge Sharing Event-4: Task 2 (2010),
+1–8.
+[60] Suprabhat Das and Pabitra Mitra. 2011. A rule-based approach of stemming for inflectional and derivational words in
+Bengali. In IEEE Technology Students’ Symposium. IEEE, 134–136.
+[61] Sajib Dasgupta and Mumit Khan. 2004. Morphological parsing of Bangla wods using PC-KIMMO. (2004).
+[62] Sajib Dasgupta, Naira Khan, Asif Iqbal Sarkar, Dewan Shahriar Hossain Pavel, and Mumit Khan. 2005. Morphological
+analysis of inflecting compound words in Bangla. (2005).
+[63] Sajib Dasgupta, Abu Wasif, and Sharmin Azam. 2004. An optimal way of machine translation from English to Bengali.
+In Proc. 7th International Conference on Computer and Information (ICCIT). 648–653.
+[64] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. BERT: Pre-training of Deep Bidirectional
+Transformers for Language Understanding. In Proceedings of the 2019 Conference of the North American Chapter
+of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers).
+Association for Computational Linguistics, 4171–4186.
+[65] Ljiljana Dolamic and Jacques Savoy. 2008. UniNE at FIRE 2008: Hindi, Bengali, and Marathi IR. In Working Notes of
+the Forum for Information Retrieval Evaluation. 12–14.
+[66] Asif Ekbal and Sivaji Bandyopadhyay. 2007. A Hidden Markov Model Based Named Entity Recognition System:
+Bengali and Hindi as Case Studies. In Pattern Recognition and Machine Intelligence, Ashish Ghosh, Rajat K. De, and
+Sankar K. Pal (Eds.). Springer Berlin Heidelberg, 545–552.
+[67] Asif Ekbal and Sivaji Bandyopadhyay. 2008. Bengali Named Entity Recognition Using Support Vector Machine. In
+Proceedings of the IJCNLP-08 Workshop on Named Entity Recognition for South and South East Asian Languages.
+[68] Asif Ekbal and Sivaji Bandyopadhyay. 2008. Development of Bengali Named Entity Tagged Corpus and its Use in
+NER Systems. In Proceedings of the 6th Workshop on Asian Language Resources.
+[69] Asif Ekbal and Sivaji Bandyopadhyay. 2008. Part of speech tagging in bengali using support vector machine. In Proc.
+of International Conference on Information Technology (ICIT). IEEE, 106–111.
+[70] Asif Ekbal and Sivaji Bandyopadhyay. 2008. A web-based Bengali news corpus for named entity recognition. Language
+Resources and Evaluation 42, 2 (2008), 173–182.
+42
+
+[71] Asif Ekbal and Sivaji Bandyopadhyay. 2009. Bengali Named Entity Recognition Using Classifier Combination. In 2009
+Seventh International Conference on Advances in Pattern Recognition. IEEE, 259–262.
+[72] Asif Ekbal and Sivaji Bandyopadhyay. 2009. Named entity recognition in Bengali: A multi-engine approach. Northern
+European Journal of Language Technology 1, 2 (2009), 26–58.
+[73] Asif Ekbal and Sivaji Bandyopadhyay. 2010. Named entity recognition using support vector machine: A language
+independent approach. International Journal of Electrical, Computer, and Systems Engineering 4, 2 (2010), 155–170.
+[74] Asif Ekbal, Rejwanul Haque, and Sivaji Bandyopadhyay. 2007. Bengali part of speech tagging using conditional
+random field. In Proceedings of International Symposium on Natural Language Processing.
+[75] Asif Ekbal, Rejwanul Haque, and Sivaji Bandyopadhyay. 2008. Maximum Entropy Based Bengali Part of Speech
+Tagging. A. Gelbukh (Ed.), Advances in Natural Language Processing and Applications, Research in Computing Science
+(RCS) Journal 33 (2008), 67–78.
+[76] Asif Ekbal, Rejwanul Haque, and Sivaji Bandyopadhyay. 2008. Named Entity Recognition in Bengali: A Conditional
+Random Field Approach. In Proceedings of the Third International Joint Conference on Natural Language Processing:
+Volume-II.
+[77] Asif Ekbal, Md. Hasanuzzaman, and Sivaji Bandyopadhyay. 2009. Voted Approach for Part of Speech Tagging in
+Bengali. In Proceedings of the 23rd Pacific Asia Conference on Language, Information and Computation, Volume 1. City
+University of Hong Kong, 120–129.
+[78] Judith Francisca, Md Mamun Mia, and SM Monzurur Rahman. 2011. Adapting rule based machine translation from
+english to bangla. Indian Journal of Computer Science and Engineering (IJCSE) 2, 3 (2011), 334–342.
+[79] William Gale and Sarangarajan Parthasarathy. 2017. Experiments in Character-Level Neural Network Models for
+Punctuation.. In Proceedings of Interspeech 2017. 2794–2798.
+[80] Debasis Ganguly, Johannes Leveling, and Gareth JF Jones. 2012. DCU@ FIRE-2012: rule-based stemmers for Bengali
+and Hindi. (2012).
+[81] Timnit Gebru, Jamie Morgenstern, Briana Vecchione, Jennifer Wortman Vaughan, Hanna Wallach, Hal Daumé III,
+and Kate Crawford. 2018. Datasheets for datasets. arXiv:1803.09010 (2018).
+[82] Souvick Ghosh, Satanu Ghosh, and Dipankar Das. 2016. Part-of-speech tagging of code-mixed social media text. In
+Proceedings of the Second Workshop on Computational Approaches to Code Switching. 90–97.
+[83] Agustin Gravano, Martin Jansche, and Michiel Bacchiani. 2009. Restoring punctuation and capitalization in transcribed
+speech. In 2009 IEEE International Conference on Acoustics, Speech and Signal Processing. IEEE, 4741–4744.
+[84] Gholamreza Haffari, Maxim Roy, and Anoop Sarkar. 2009. Active Learning for Statistical Phrase-based Machine
+Translation. In Proceedings of Human Language Technologies: The 2009 Annual Conference of the North American
+Chapter of the Association for Computational Linguistics. Association for Computational Linguistics, 415–423.
+[85] Arid Hasan, Firoj Alam, Shammur Absar Chowdhury, and Naira Khan. 2019. Neural vs Statistical Machine Translation:
+Revisiting the Bangla-English Language Pair. In 2nd International Conference on Bangla Speech and Language Process-
+ing (ICBSLP) (2019-01-01). https://www.researchgate.net/publication/338223297_Neural_vs_Statistical_Machine_
+Translation_Revisiting_the_Bangla-English_Language_Pair
+[86] Fahim Muhammad Hasan, Naushad UzZaman, and Mumit Khan. 2007. Comparison of different POS Tagging
+Techniques (N-Gram, HMM and Brill’s tagger) for Bangla. In Advances and Innovations in Systems, Computing Sciences
+and Software Engineering. Springer, 121–126.
+[87] KM Azharul Hasan, Sajidul Islam, GM Mashrur-E-Elahi, and Mohammad Navid Izhar. 2013. Sentiment recognition
+from bangla text. In Technical Challenges and Design Issues in Bangla Language Processing. IGI Global, 315–327.
+[88] Kazi Saidul Hasan, Md. Altaf ur Rahman, and Vincent Ng. 2009. Learning-Based Named Entity Recognition for
+Morphologically-Rich, Resource-Scarce Languages. In Proceedings of the 12th Conference of the European Chapter of
+the ACL (EACL 2009). Association for Computational Linguistics, 354–362.
+[89] Md Arid Hasan, Firoj Alam, Shammur Absar Chowdhury, and Naira Khan. 2019. Neural Machine Translation for the
+Bangla-English Language Pair. In 2019 22nd International Conference on Computer and Information Technology (ICCIT).
+IEEE, 1–6.
+[90] Md Arid Hasan, Firoj Alam, Shammur Absar Chowdhury, and Naira Khan. 2019. Neural vs Statistical Machine
+Translation: Revisiting the Bangla-English Language Pair. In 2019 International Conference on Bangla Speech and
+Language Processing (ICBSLP). IEEE, 1–6.
+[91] Md Arid Hasan, Firoj Alam, and Sheak Rashed Haider Noori. 2020. A collaborative platform to collect data for
+developing machine translation systems. In Proceedings of International Joint Conference on Computational Intelligence.
+Springer, 407–416.
+[92] Md. Arid Hasan, Jannatul Tajrin, Shammur Absar Chowdhury, and Firoj Alam. 2020. Sentiment Classification in
+Bangla Textual Content: A Comparative Study. In 2020 23rd International Conference on Computer and Information
+Technology (ICCIT). 1–6.
+43
+
+[93] Tahmid Hasan, Abhik Bhattacharjee, Kazi Samin, Masum Hasan, Madhusudan Basak, M. Sohel Rahman, and Rifat
+Shahriyar. 2020. Not Low-Resource Anymore: Aligner Ensembling, Batch Filtering, and New Datasets for Bengali-
+English Machine Translation. In Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing
+(EMNLP). Association for Computational Linguistics, 2612–2623.
+[94] Mohammad Hasanuzzaman, Asif Ekbal, and Sivaji Bandyopadhyay. 2009. Maximum Entropy Approach for Named
+Entity Recognition in Bengali and Hindi. International Journal of Recent Trends in Engineering 1, 1 (2009), 408.
+[95] Md Hasnat, Jabir Mowla, Mumit Khan, et al. 2007. Isolated and continuous bangla speech recognition: implementation,
+performance and application perspective. (2007).
+[96] Md Abul Hasnat, Muttakinur Rahman Chowdhury, and Mumit Khan. 2009. An open source tesseract based optical
+character recognizer for bangla script. In 2009 10th International Conference on Document Analysis and Recognition.
+IEEE, 671–675.
+[97] Md Abul Hasnat, SM Murtoza Habib, and Mumit Khan. 2008. A high performance domain specific OCR for Bangla
+script. In Novel algorithms and techniques in telecommunications, automation and industrial electronics. Springer,
+174–178.
+[98] Asif Hassan, Mohammad Rashedul Amin, Abul Kalam Al Azad, and Nabeel Mohammed. 2016. Sentiment Analysis on
+Bangla and Romanized Bangla Text using Deep Recurrent Models. In 2016 International Workshop on Computational
+Intelligence (IWCI). IEEE, 51–56.
+[99] Kamrul Hayder, Md Zahurul Islam, and Mumit Khan. 2007. Research report on Bengla tagged lexicon. Technical Report.
+BRAC University.
+[100] Sepp Hochreiter and Jürgen Schmidhuber. 1997. Long short-term memory. Neural computation 9, 8 (1997), 1735–1780.
+[101] Sarah Holland, Ahmed Hosny, Sarah Newman, Joshua Joseph, and Kasia Chmielinski. 2018. The Dataset Nutrition
+Label: A Framework To Drive Higher Data Quality Standards. arXiv 1805.03677 (2018).
+[102] Md Nesarul Hoque and Md Hanif Seddiqui. 2015. Bangla Parts-of-Speech tagging using Bangla stemmer and rule
+based analyzer. In 2015 18th International Conference on Computer and Information Technology (ICCIT). IEEE, 440–444.
+[103] Zhiheng Huang, Wei Xu, and Kai Yu. 2015. Bidirectional LSTM-CRF models for sequence tagging. arXiv preprint
+arXiv:1508.01991 (2015).
+[104] Ben Hutchinson, Andrew Smart, Alex Hanna, Emily Denton, Christina Greer, Oddur Kjartansson, Parker Barnes, and
+Margaret Mitchell. 2021. Towards Accountability for Machine Learning Datasets: Practices from Software Engineering
+and Infrastructure. In Proceedings of the 2021 ACM Conference on Fairness, Accountability, and Transparency (Virtual
+Event, Canada). 560–575.
+[105] Nabil Ibtehaz and Abdus Satter. 2018.
+A Partial String Matching Approach for Named Entity Recognition in
+Unstructured Bengali Data. International Journal of Modern Education and Computer Science (2018).
+[106] MS Islam. 2009. Research on Bangla language processing in Bangladesh: progress and challenges. In 8th international
+language & development conference. 23–25.
+[107] Md Islam, Md Uddin, Mumit Khan, et al. 2007. A light weight stemmer for Bengali and its Use in spelling Checker.
+(2007).
+[108] Md Saiful Islam, Md Ashiqul Islam, Md Afjal Hossain, and Jagoth Jyoti Dey. 2016. Supervised approach of sentimentality
+extraction from Bengali facebook status. In 2016 19th International Conference on Computer and Information Technology
+(ICCIT). IEEE, 383–387.
+[109] Zahurul Islam, Jörg Tiedemann, and Andreas Eisele. 2010. English to Bangla Phrase-Based Machine Translation. In
+Proceedings of the 14th Annual conference of the European Association for Machine Translation. European Association
+for Machine Translation.
+[110] Rachael Jack, Oliver Garrod, and Philippe Schyns. 2013. Dynamic Facial Expressions of Emotion Transmit an Evolving
+Hierarchy of Signals over Time. Current biology : CB 24 (2013).
+[111] Kushal Jain, Adwait Deshpande, Kumar Shridhar, Felix Laumann, and Ayushman Dash. 2020. Indic-Transformers: An
+Analysis of Transformer Language Models for Indian Languages. arXiv preprint arXiv:2011.02323 (2020).
+[112] Md Fasihul Kabir, Khandaker Abdullah-Al-Mamun, and Mohammad Nurul Huda. 2016. Deep learning based parts of
+speech tagger for Bengali. In 2016 5th International Conference on Informatics, Electronics and Vision (ICIEV). IEEE,
+26–29.
+[113] Monojit Choudhury Kalika Bali and Priyanka Biswas. 2010. Indian Language Part-of-Speech Tagset: Bengali LDC2010T16.
+Technical Report. Philadelphia: Linguistic Data Consortium.
+[114] Mohammad A Karim. 2013. Technical challenges and design issues in bangla language processing. IGI Global.
+[115] Md. Rezaul Karim, Bharathi Raja Chakravarthi, John P. McCrae, and Michael Cochez. 2020. Classification Benchmarks
+for Under-resourced Bengali Language based on Multichannel Convolutional-LSTM Network. CoRR abs / 2004.07807
+(2020). arXiv:2004.07807
+[116] Nadeem Jadoon Khan, Waqas Anwar, and Nadir Durrani. 2017. Machine translation approaches and survey for indian
+languages. arXiv preprint arXiv:1701.04290 (2017).
+44
+
+[117] Aisha Khatun, Anisur Rahman, Hemayet Ahmed Chowdhury, Md. Saiful Islam, and Ayesha Tasnim. 2019. A Subword
+Level Language Model for Bangla Language. CoRR abs/1911.07613 (2019). arXiv:1911.07613 http://arxiv.org/abs/1911.
+07613
+[118] Aisha Khatun, Anisur Rahman, Md Saiful Islam, et al. 2019. Authorship Attribution in Bangla literature using
+Character-level CNN. In 2019 22nd International Conference on Computer and Information Technology (ICCIT). IEEE,
+1–5.
+[119] Diederik P. Kingma and Jimmy Ba. 2015. Adam: A Method for Stochastic Optimization. In 3rd International Conference
+on Learning Representations, ICLR 2015, San Diego, CA, USA, May 7-9, 2015, Conference Track Proceedings, Yoshua
+Bengio and Yann LeCun (Eds.). http://arxiv.org/abs/1412.6980
+[120] Philipp Koehn and Rebecca Knowles. 2017. Six Challenges for Neural Machine Translation. In Proceedings of the First
+Workshop on Neural Machine Translation. Association for Computational Linguistics, 28–39.
+[121] Narine Kokhlikyan, Vivek Miglani, Miguel Martin, Edward Wang, Bilal Alsallakh, Jonathan Reynolds, Alexander
+Melnikov, Natalia Kliushkina, Carlos Araya, Siqi Yan, and Orion Reblitz-Richardson. 2020. Captum: A unified and
+generic model interpretability library for PyTorch. arXiv 2009.07896 (2020).
+[122] Taku Kudo and Yuji Matsumoto. 2001. Chunking with support vector machines. In Second Meeting of the North
+American Chapter of the Association for Computational Linguistics. Association for Computational Linguistics, 1–8.
+[123] Ayush Kumar, Sarah Kohail, Asif Ekbal, and Chris Biemann. 2015. IIT-TUDA: System for sentiment analysis in indian
+languages using lexical acquisition. In International Conference on Mining Intelligence and Knowledge Exploration.
+Springer, 684–693.
+[124] S Sachin Kumar, M Anand Kumar, KP Soman, and Prabaharan Poornachandran. 2020. Dynamic mode-based feature
+with random mapping for sentiment analysis. In Intelligent systems, technologies and applications. Springer, 1–15.
+[125] A Kumaran. 2007. A Part of Speech Tagger for Indian Languages (POS tagger). Technical Report. Microsoft Research.
+[126] Anoop Kunchukuttan, Divyanshu Kakwani, Satish Golla, Gokul N.C., Avik Bhattacharyya, Mitesh M. Khapra, and
+Pratyush Kumar. 2020. AI4Bharat-IndicNLP Corpus: Monolingual Corpora and Word Embeddings for Indic Languages.
+arXiv preprint arXiv:2005.00085 (2020).
+[127] John D. Lafferty, Andrew McCallum, and Fernando C. N. Pereira. 2001. Conditional Random Fields: Probabilistic
+Models for Segmenting and Labeling Sequence Data. In Proceedings of the Eighteenth International Conference on
+Machine Learning. Morgan Kaufmann Publishers Inc., 282–289.
+[128] Guillaume Lample, Miguel Ballesteros, Sandeep Subramanian, Kazuya Kawakami, and Chris Dyer. 2016. Neural
+Architectures for Named Entity Recognition. In Proceedings of the 2016 Conference of the North American Chapter of the
+Association for Computational Linguistics: Human Language Technologies. Association for Computational Linguistics,
+260–270.
+[129] Yann LeCun, Bernhard Boser, John S Denker, Donnie Henderson, Richard E Howard, Wayne Hubbard, and Lawrence D
+Jackel. 1989. Backpropagation applied to handwritten zip code recognition. Neural computation 1, 4 (1989), 541–551.
+[130] Tal Levy, Vered Silber-Varod, and Ami Moyal. 2012. The effect of pitch, intensity and pause duration in punctuation
+detection. In 2012 IEEE 27th Convention of Electrical and Electronics Engineers in Israel. IEEE, 1–4.
+[131] Pierre Lison and Jörg Tiedemann. 2016. Opensubtitles2016: Extracting large parallel corpora from movie and tv
+subtitles. (2016).
+[132] Nelson F Liu, Jonathan May, Michael Pust, and Kevin Knight. 2018. Augmenting Statistical Machine Translation with
+Subword Translation of Out-of-Vocabulary Words. arXiv preprint arXiv:1808.05700 (2018).
+[133] Aki Loponen, Jiaul H Paik, and Kalervo Järvelin. 2013. UTA stemming and lemmatization experiments in the FIRE
+bengali Ad Hoc task. In Multilingual Information Access in South Asian Languages. Springer, 258–268.
+[134] Wei Lu and Hwee Tou Ng. 2010. Better Punctuation Prediction with Dynamic Conditional Random Fields. In
+Proceedings of the 2010 Conference on Empirical Methods in Natural Language Processing. Association for Computational
+Linguistics, 177–186.
+[135] Xuezhe Ma and Eduard Hovy. 2016. End-to-end Sequence Labeling via Bi-directional LSTM-CNNs-CRF. arXiv preprint
+arXiv:1603.01354 (2016).
+[136] Altaf Mahmud and Mumit Khan. 2009. Syntactic part of speech tagging guidelines for Bangla text. Technical Report.
+BRAC University.
+[137] Md Redowan Mahmud, Mahbuba Afrin, Md Abdur Razzaque, Ellis Miller, and Joel Iwashige. 2014. A rule based bengali
+stemmer. In 2014 International Conference on Advances in Computing, Communications and Informatics (ICACCI). IEEE,
+2750–2756.
+[138] Shamsul Arafin Mahtab, Nazmul Islam, and Md Mahfuzur Rahaman. 2018. Sentiment Analysis on Bangladesh Cricket
+with Support Vector Machine. In 2018 International Conference on Bangla Speech and Language Processing (ICBSLP).
+IEEE, 1–4.
+[139] Prasenjit Majumder, Mandar Mitra, Swapan K Parui, Gobinda Kole, Pabitra Mitra, and Kalyankumar Datta. 2007.
+YASS: Yet another suffix stripper. ACM transactions on information systems (TOIS) 25, 4 (2007), 18–es.
+45
+
+[140] Ashis Kumar Mandal and Rikta Sen. 2014. Supervised learning methods for bangla web document categorization.
+arXiv preprint arXiv:1410.2045 (2014).
+[141] Munirul Mansur, Naushad UzZaman, and Mumit Khan. 2010. Analysis of N-Gram Based Text Categorization for Bangla
+in a Newspaper Corpus. Technical Report. BRAC university.
+[142] James H Martin and Daniel Jurafsky. 2000. Speech and language processing. International Edition 710 (2000).
+[143] Louis Martin, Benjamin Muller, Pedro Javier Ortiz Suárez, Yoann Dupont, Laurent Romary, Éric Villemonte de
+La Clergerie, Djamé Seddah, and Benoît Sagot. 2019. Camembert: a tasty french language model. arXiv preprint
+arXiv:1911.03894 (2019).
+[144] Andrew McCallum, Dayne Freitag, and Fernando C. N. Pereira. 2000. Maximum Entropy Markov Models for
+Information Extraction and Segmentation. In Proceedings of the Seventeenth International Conference on Machine
+Learning. Morgan Kaufmann Publishers Inc., San Francisco, CA, USA, 591–598.
+[145] Anoop Kunchukuttan Abhijit Mishra, Rajen Chatterjee, Ritesh Shah, and Pushpak Bhattacharyya. 2014. Shata-
+Anuvadak: Tackling Multiway Translation of Indian Languages. LREC, Rekjyavik, Iceland (2014).
+[146] Ayesha Binte Mosaddeque and Nafid Haque. 2004. Context-Free Grammar for Bangla. Technical Report. BRAC
+University.
+[147] Sankar Mukherjee and Shyamal Kumar Das Mandal. 2013. Bengali parts-of-speech tagging using global linear model.
+In 2013 Annual IEEE India Conference (INDICON). IEEE, 1–4.
+[148] Mohammad Mumin, Md Hanif, Muhammed Iqbal, and Mohammed J Islam. 2019. Neural Machine Translation for
+Low-resource English-Bangla. Journal of Computer Science 15 (2019), 1627–1637.
+[149] Mohammad Abdullah Al Mumin, Md Hanif Seddiqui, Muhammed Zafar Iqbal, and Mohammed Jahirul Islam. 2019.
+shu-torjoma: An English <–> Bangla Statistical Machine Translation System. Journal of Computer Science (Science
+Publications) (2019).
+[150] Toshiaki Nakazawa, Sadao Kurohashi, Shohei Higashiyama, Chenchen Ding, Raj Dabre, Hideya Mino, Isao Goto,
+Win Pa Pa, Anoop Kunchukuttanand, and Sadao Kurohashi. 2018. Overview of the 5th Workshop on Asian Translation.
+Technical Report.
+[151] Sudip Naskar and Sivaji Bandyopadhyay. 2005. Use of machine translation in India: Current status. AAMT Journal
+(2005), 25–31.
+[152] Sudip Naskar, Diganta Saha, and Sivaji Bandyopadhyay. 2004. ANUBAAD–A Hybrid Machine Translation System
+from English to Bangla. simple’04 (2004).
+[153] Sudip Kumar Naskar and Sivaji Bandyopadhyay. 2006. Handling of Prepositions in English to Bengali Machine
+Translation. In Proceedings of the Third ACL-SIGSEM Workshop on Prepositions.
+[154] Dat Quoc Nguyen and Anh Tuan Nguyen. 2020. PhoBERT: Pre-trained language models for Vietnamese. arXiv
+preprint arXiv:2003.00744 (2020).
+[155] Myle Ott, Sergey Edunov, Alexei Baevski, Angela Fan, Sam Gross, Nathan Ng, David Grangier, and Michael Auli.
+2019. fairseq: A Fast, Extensible Toolkit for Sequence Modeling. In Proceedings of the 2019 Conference of the North
+American Chapter of the Association for Computational Linguistics (Demonstrations). Association for Computational
+Linguistics, 48–53.
+[156] Jiaul H Paik and Swapan K Parui. 2008. A simple stemmer for inflectional languages. In Forum for Information
+Retrieval Evaluation.
+[157] Alok Ranjan Pal, Niladri Sekhar Dash, and Diganta Saha. 2015. An innovative lemmatization technique for Bangla
+nouns by using longest suffix stripping methodology in decreasing order. In 2015 International Conference on Computing
+and Network Communications (CoCoNet). IEEE, 675–678.
+[158] Santanu Pal, Tanmoy Chakraborty, and Sivaji Bandyopadhyay. 2011. Handling multiword expressions in phrase-based
+statistical machine translation. Machine Translation Summit XIII (2011), 215–224.
+[159] Mehedi Hasan Palash, Partha Protim Das, and Summit Haque. 2019. Sentimental Style Transfer in Text with
+Multigenerative Variational Auto-Encoder. In 2019 International Conference on Bangla Speech and Language Processing
+(ICBSLP). IEEE, 1–4.
+[160] Kishore Papineni, Salim Roukos, Todd Ward, and Wei-Jing Zhu. 2002. Bleu: a method for automatic evaluation
+of machine translation. In Proceedings of the 40th annual meeting of the Association for Computational Linguistics.
+311–318.
+[161] Braja Gopal Patra, Dipankar Das, Amitava Das, and Rajendra Prasath. 2015. Shared Task on Sentiment Analysis in
+Indian Languages (SAIL) Tweets - An Overview. In Mining Intelligence and Knowledge Exploration, Rajendra Prasath,
+Anil Kumar Vuppala, and T. Kathirvalavakumar (Eds.). Springer International Publishing, 650–655.
+[162] Anup Kumar Paul, Dipankar Das, and Md Mustafa Kamal. 2009. Bangla speech recognition system using LPC and
+ANN. In 2009 Seventh International Conference on Advances in pattern recognition. IEEE, 171–174.
+[163] Marco Polignano, Pierpaolo Basile, Marco de Gemmis, Giovanni Semeraro, and Valerio Basile. 2019. AlBERTo: Italian
+BERT Language Understanding Model for NLP Challenging Tasks Based on Tweets.. In CLiC-it.
+46
+
+[164] Maria Pontiki, Dimitris Galanis, John Pavlopoulos, Harris Papageorgiou, Ion Androutsopoulos, and Suresh Manandhar.
+2014. SemEval-2014 Task 4: Aspect Based Sentiment Analysis. In Proceedings of SemEval 2014. ACL, 27–35.
+[165] Matt Post, Chris Callison-Burch, and Miles Osborne. 2012. Constructing Parallel Corpora for Six Indian Languages
+via Crowdsourcing. In Proceedings of the Seventh Workshop on Statistical Machine Translation. Association for Compu-
+tational Linguistics, 401–409.
+[166] A. Rahman and M. S. Hossen. 2019. Sentiment Analysis on Movie Review Data Using Machine Learning Approach.
+In 2019 International Conference on Bangla Speech and Language Processing (ICBSLP). 1–4.
+[167] Md Rahman, Emon Kumar Dey, et al. 2018. Datasets for Aspect-Based Sentiment Analysis in Bangla and Its Baseline
+Evaluation. Data 3, 2 (2018), 15.
+[168] Adwait Ratnaparkhi. 1996. A Maximum Entropy Model for Part-Of-Speech Tagging. In Conference on Empirical
+Methods in Natural Language Processing, Vol. 1. 133–142.
+[169] Md Rezaul Karim, Bharathi Raja Chakravarthi, Mihael Arcan, John P McCrae, and Michael Cochez. 2020. Classification
+Benchmarks for Under-resourced Bengali Language based on Multichannel Convolutional-LSTM Network. arXiv
+(2020), arXiv–2004.
+[170] Diganta Saha and Sivaji Bandyopadhyay. 2005. A semantics-based English-Bengali EBMT system for translating
+news headlines. In MT SUMMIT X.
+[171] Khan Md Salm, Anwarus Salam, Mumit Khan, and Tetsuro Nishino. 2009. Example based English-Bengali machine
+translation using WordNet. (2009).
+[172] Victor Sanh, Lysandre Debut, Julien Chaumond, and Thomas Wolf. 2019. DistilBERT, a distilled version of BERT:
+smaller, faster, cheaper and lighter. arXiv preprint arXiv:1910.01108 (2019).
+[173] Kamal Sarkar and Vivekananda Gayen. 2012. A practical part-of-speech tagger for Bengali. In Proc. of Third Interna-
+tional Conference on Emerging Applications of Information Technology (EAIT). IEEE, 36–40.
+[174] Sandipan Sarkar and Sivaji Bandyopadhyay. 2008. Design of a Rule-based Stemmer for Natural Language Text in
+Bengali. In Proceedings of the IJCNLP-08 Workshop on NLP for Less Privileged Languages.
+[175] Sandipan Sarkar and Sivaji Bandyopadhyay. 2012. FIRE 2012 working notes: Morpheme extraction task using
+mulaadhaar–a rule-based stemmer for bengali. In Working Notes for the FIRE 2012 Workshop.
+[176] Helmut Schmid. 1994. Part-of-speech tagging with neural networks. In Proceedings of the 15th conference on Computa-
+tional linguistics-Volume 1. Association for Computational Linguistics, 172–176.
+[177] Shriya Se, R Vinayakumar, M Anand Kumar, and KP Soman. 2015. AMRITA-CEN@ SAIL2015: sentiment analysis in
+Indian languages. In International Conference on Mining Intelligence and Knowledge Exploration. Springer, 703–710.
+[178] Md Hanif Seddiqui, Abdullah Al Mohammad Maruf, and Abu Nowshed Chy. 2016. Recursive suffix stripping to
+augment bangla stemmer. In International Conference Advanced Information and Communication Technology (ICAICT).
+[179] Ovishake Sen, Mohtasim Fuad, MD. Nazrul Islam, Jakaria Rabbi, MD. Kamrul Hasan, Mohammed Baz, Mehedi Masud,
+Md. Abdul Awal, Awal Ahmed Fime, Md. Tahmid Hasan Fuad, Delowar Sikder, and MD. Akil Raihan Iftee. 2021.
+Bangla Natural Language Processing: A Comprehensive Review of Classical, Machine Learning, and Deep Learning
+Based Methods. arXiv 2105.14875 (2021).
+[180] Probal Sengupta. 1993. On lexical and syntactic processing of Bangla language by computer. Ph.D. Dissertation. Indian
+Statistical Institute, Kolkata.
+[181] Probal Sengupta and BB Chaudhuri. 1993. A morpho-syntactic analysis based lexical subsystem. International journal
+of pattern recognition and artificial intelligence 7, 03 (1993), 595–619.
+[182] Rico Sennrich, Barry Haddow, and Alexandra Birch. 2016. Neural Machine Translation of Rare Words with Subword
+Units. In Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long
+Papers). Association for Computational Linguistics, 1715–1725.
+[183] Rico Sennrich, Barry Haddow, and Alexandra Birch. 2016. Neural Machine Translation of Rare Words with Subword
+Units. In Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long
+Papers). Association for Computational Linguistics, 1715–1725.
+[184] Anil Kumar Singh. 2008. Named entity recognition for south and south east Asian languages: taking stock. In Proc. of
+the IJCNLP-08 Workshop on Named Entity Recognition for South and South East Asian Languages.
+[185] Sakhawat Hosain Sumit, Md Zakir Hossan, Tareq Al Muntasir, and Tanvir Sourov. 2018. Exploring word embedding
+for bangla sentiment analysis. In 2018 International Conference on Bangla Speech and Language Processing (ICBSLP).
+IEEE, 1–5.
+[186] György Szaszák and Máté Ákos Tündik. 2019. Leveraging a Character, Word and Prosody Triplet for an ASR Error
+Robust and Agglutination Friendly Punctuation Approach.. In Proc. Interspeech 2019. 2988–2992.
+[187] SM Abu Taher, Kazi Afsana Akhter, and KM Azharul Hasan. 2018. N-gram based sentiment mining for bangla text
+using support vector machine. In 2018 International Conference on Bangla Speech and Language Processing (ICBSLP).
+IEEE, 1–5.
+47
+
+[188] Md Tanvir Alam and Md Mofijul Islam. 2018. BARD: Bangla Article Classification Using a New Comprehensive
+Dataset. In 2018 International Conference on Bangla Speech and Language Processing (ICBSLP). 1–5.
+[189] Nafis Irtiza Tripto and Mohammed Eunus Ali. 2018. Detecting multilabel sentiment and emotions from Bangla
+youtube comments. In 2018 International Conference on Bangla Speech and Language Processing (ICBSLP). IEEE, 1–6.
+[190] Rabia Sultana Ummi and Fahmina Huda. 2008. Developing language resources for English machine translation. Technical
+Report. BRAC University.
+[191] Tapashee Tabassum Urmi, Jasmine Jahan Jammy, and Sabir Ismail. 2016. A corpus based unsupervised Bangla word
+stemming using N-gram language model. In 2016 5th International Conference on Informatics, Electronics and Vision
+(ICIEV). IEEE, 824–828.
+[192] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Ł ukasz Kaiser, and
+Illia Polosukhin. 2017. Attention is All you Need. In Advances in Neural Information Processing Systems 30. Curran
+Associates, Inc., 5998–6008.
+[193] Md Ferdous Wahid, Md Jahid Hasan, and Md Shahin Alom. 2019. Cricket Sentiment Analysis from Bangla Text Using
+Recurrent Neural Network with Long Short Term Memory Model. In 2019 International Conference on Bangla Speech
+and Language Processing (ICBSLP). IEEE, 1–4.
+[194] Feng Wang, Wei Chen, Zhen Yang, and Bo Xu. 2018. Self-attention based network for punctuation restoration. In
+2018 24th International Conference on Pattern Recognition (ICPR). IEEE, 2803–2808.
+[195] Chenglin Xu, Lei Xie, Guangpu Huang, Xiong Xiao, Eng Siong Chng, and Haizhou Li. 2014. A deep neural network
+approach for sentence boundary detection in broadcast news. In Fifteenth annual conference of the international speech
+communication association.
+[196] Hiroyasu Yamada and Yuji Matsumoto. 2003. Statistical Dependency Analysis with Support Vector Machines. In
+Proceedings of the Eighth International Conference on Parsing Technologies. 195–206.
+[197] Piotr Zelasko, Piotr Szymanski, Jan Mizgajski, Adrian Szymczak, Yishay Carmiel, and Najim Dehak. 2018. Punctuation
+Prediction Model for Conversational Speech. In Proc. Interspeech 2018. ISCA, 2633–2637.
+[198] Dongdong Zhang, Shuangzhi Wu, Nan Yang, and Mu Li. 2013. Punctuation prediction with transition-based parsing.
+In Proceedings of the 51st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers).
+752–760.
+48
