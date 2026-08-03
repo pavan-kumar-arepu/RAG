@@ -43,16 +43,3 @@ python test_pipeline.py
 Flow diagram for the RAG pipeline (generated on 2026-08-03):
 
 ![RAG flow diagram](images/RAG-2026-08-03-063358.png)
-
-## Add / Update README and push
-After editing this file, run:
-
-```bash
-git add README.md
-git commit -m "Add README for assignment-2b"
-git push
-```
-
----
-
-If you want, I can commit and push this README for you now.
