@@ -129,12 +129,3 @@ python test_pipeline.py
 ## Notes
 
 - The repository contains both index artifacts and code to reproduce them. Follow the Exposure & Execution Steps to rebuild indexes and rerun evaluations.
-
-## Next steps I can do for you
-
-- Export the Mermaid diagram as PNG/SVG for slide use.
-- Produce a one-page slide-ready summary highlighting strengths and weaknesses.
-
----
-
-If you'd like changes to the diagram layout, color scheme, or want a PNG export, tell me which format and I'll generate it.
